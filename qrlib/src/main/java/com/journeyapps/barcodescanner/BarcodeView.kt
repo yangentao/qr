@@ -3,6 +3,7 @@ package com.journeyapps.barcodescanner
 import android.content.Context
 import android.graphics.Rect
 import com.google.zxing.DecodeHintType
+import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
 import com.journeyapps.barcodescanner.camera.PreviewCallback
@@ -25,35 +26,35 @@ import java.util.*
  */
 class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallback {
 
-    private var decoding = false
     private var callback: BarcodeCallback? = null
-
+    private val decoding: Boolean get() = callback != null
 
     private var taskHandler: TaskHandler? = null
-    val decoder: Decoder = createDecoder()
-    var cropRect: Rect? = null
-    private var running = false
+    private var cropRect: Rect? = null
+    private val decoder: Decoder
 
-    private fun createDecoder(): Decoder {
-        val hints = HashMap<DecodeHintType, Any>()
+    init {
+        val hints = EnumMap<DecodeHintType, Any>(DecodeHintType::class.java)
         hints[DecodeHintType.NEED_RESULT_POINT_CALLBACK] = this
-        val decoderFactory = DefaultDecoderFactory(ScanConfig.decodeSet, null, ScanConfig.charset)
-        return decoderFactory.createDecoder(hints)
+        hints[DecodeHintType.POSSIBLE_FORMATS] = ScanConfig.decodeSet
+        hints[DecodeHintType.CHARACTER_SET] = ScanConfig.charset
+        val reader = MultiFormatReader()
+        reader.setHints(hints)
+        decoder = Decoder(reader)
     }
+
 
     override fun foundPossibleResultPoint(point: ResultPoint) {
         decoder.foundPossibleResultPoint(point)
     }
 
     fun decodeSingle(callback: BarcodeCallback) {
-        this.decoding = true
         this.callback = callback
         startDecoderThread()
     }
 
 
     fun stopDecoding() {
-        this.decoding = false
         this.callback = null
         stopDecoderThread()
     }
@@ -64,7 +65,6 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
         if (this.decoding && isPreviewActive) {
             cropRect = previewFramingRect
             taskHandler = TaskHandler("decoder")
-            running = true
             requestNextPreview()
         }
     }
@@ -75,7 +75,6 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
     }
 
     private fun stopDecoderThread() {
-        running = false
         taskHandler?.quit()
         taskHandler = null
     }
@@ -85,10 +84,8 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
         val ci = cameraInstance ?: return
         if (ci.isOpen) {
             ci.requestPreview(PreviewCallback { sourceData ->
-                if (running) {
-                    taskHandler?.post {
-                        decode(sourceData)
-                    }
+                taskHandler?.post {
+                    decode(sourceData)
                 }
             })
         }
