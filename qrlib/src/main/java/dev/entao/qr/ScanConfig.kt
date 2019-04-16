@@ -13,7 +13,6 @@ class ScanConfig {
 	var beep: Boolean = true
 	var timeout: Int = 60 * 1000
 
-	var returnImage: Boolean = false
 
 	var enableManualInput: Boolean = true
 	var enableLight: Boolean = true

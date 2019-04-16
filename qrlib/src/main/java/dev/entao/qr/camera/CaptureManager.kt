@@ -1,6 +1,6 @@
 @file:Suppress("UNUSED_PARAMETER")
 
-package com.journeyapps.barcodescanner
+package dev.entao.qr.camera
 
 import android.Manifest
 import android.annotation.TargetApi
@@ -12,14 +12,15 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import android.view.Surface
 import android.view.WindowManager
 import com.google.zxing.ResultPoint
+import com.journeyapps.barcodescanner.BarcodeCallback
+import com.journeyapps.barcodescanner.BarcodeResult
+import com.journeyapps.barcodescanner.CameraPreview
+import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import dev.entao.qr.R
 import dev.entao.qr.ScanConfig
-import dev.entao.qr.camera.BeepManager
-import dev.entao.qr.camera.InactivityTimer
 import dev.entao.util.Task
 
 /**
@@ -40,14 +41,13 @@ import dev.entao.util.Task
  * - Setting the result and finishing the Activity when a barcode is scanned
  * - Displaying camera errors
  */
-class CaptureManager(private val activity: Activity, private val barcodeView: DecoratedBarcodeView) {
+class CaptureManager(private val activity: Activity, private val barcodeView: DecoratedBarcodeView, config: ScanConfig) : CameraPreview.StateListener,
+    BarcodeCallback {
     private var orientationLock = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-    private var returnBarcodeImagePath = false
 
     private var destroyed = false
 
     private val inactivityTimer: InactivityTimer = InactivityTimer(activity, Runnable {
-        Log.d(TAG, "Finishing due to inactivity")
         finish()
     })
 
@@ -56,88 +56,49 @@ class CaptureManager(private val activity: Activity, private val barcodeView: De
     private val handler: Handler = Handler()
 
     var onResult: (BarcodeResult) -> Unit = {}
-
-
-    private val stateListener = object : CameraPreview.StateListener {
-        override fun previewSized() {
-
-        }
-
-        override fun previewStarted() {
-
-        }
-
-        override fun previewStopped() {
-
-        }
-
-        override fun cameraError(error: Exception) {
-            displayFrameworkBugMessageAndExit()
-        }
+    var onFinish: () -> Unit = {
+        activity.finish()
     }
+
 
     init {
-        barcodeView.barcodeView.addStateListener(stateListener)
-    }
-
-    private val callback = object : BarcodeCallback {
-        override fun barcodeResult(result: BarcodeResult) {
-            barcodeView.pause()
-            beepManager.playBeepSoundAndVibrate()
-
-            Task.foreDelay(DELAY_BEEP) {
-                onResult(result)
-            }
-        }
-
-        override fun possibleResultPoints(resultPoints: List<ResultPoint>) {
-
-        }
-    }
-
-    /**
-     * Perform initialization, according to preferences set in the intent.
-     */
-    fun initializeFromIntent(config: ScanConfig) {
-        val window = activity.window
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        barcodeView.barcodeView.addStateListener(this)
         lockOrientation()
-        barcodeView.initializeFromIntent(config)
         beepManager.isBeepEnabled = config.beep
         beepManager.updatePrefs()
         if (config.timeout > 0) {
-            val runnable = Runnable { returnResultTimeout() }
-            handler.postDelayed(runnable, config.timeout.toLong())
-        }
-
-        if (config.returnImage) {
-            returnBarcodeImagePath = true
+            handler.postDelayed({
+                finish()
+            }, config.timeout.toLong())
         }
     }
+
 
     /**
      * Lock display to current orientation.
      */
-    protected fun lockOrientation() {
+    private fun lockOrientation() {
         // Only get the orientation if it's not locked to one yet.
         if (this.orientationLock == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
             // Adapted from http://stackoverflow.com/a/14565436
             val display = activity.windowManager.defaultDisplay
             val rotation = display.rotation
             val baseOrientation = activity.resources.configuration.orientation
-            var orientation = 0
-            if (baseOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            val orientation: Int = if (baseOrientation == Configuration.ORIENTATION_LANDSCAPE) {
                 if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_90) {
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 } else {
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+                    ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
                 }
             } else if (baseOrientation == Configuration.ORIENTATION_PORTRAIT) {
                 if (rotation == Surface.ROTATION_0 || rotation == Surface.ROTATION_270) {
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
                 } else {
-                    orientation = ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+                    ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
                 }
+            } else {
+                0
             }
 
             this.orientationLock = orientation
@@ -146,16 +107,41 @@ class CaptureManager(private val activity: Activity, private val barcodeView: De
         activity.requestedOrientation = this.orientationLock
     }
 
-    /**
-     * Start decoding.
-     */
-    fun decode() {
-        barcodeView.decodeSingle(callback)
+    override fun previewSized() {
+
     }
 
-    /**
-     * Call from Activity#onResume().
-     */
+    override fun previewStarted() {
+
+    }
+
+    override fun previewStopped() {
+
+    }
+
+    override fun cameraError(error: Exception) {
+        displayFrameworkBugMessageAndExit()
+    }
+
+    override fun barcodeResult(result: BarcodeResult) {
+        barcodeView.pause()
+        beepManager.playBeepSoundAndVibrate()
+
+        Task.foreDelay(DELAY_BEEP) {
+            finish()
+            onResult(result)
+        }
+    }
+
+    override fun possibleResultPoints(resultPoints: List<ResultPoint>) {
+
+    }
+
+
+    fun decode() {
+        barcodeView.decodeSingle(this)
+    }
+
     fun onResume() {
         if (Build.VERSION.SDK_INT >= 23) {
             openCameraWithPermission()
@@ -173,74 +159,46 @@ class CaptureManager(private val activity: Activity, private val barcodeView: De
         if (activity.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
             barcodeView.resume()
         } else if (!askedPermission) {
-            activity.requestPermissions(
-                arrayOf(Manifest.permission.CAMERA),
-                cameraPermissionReqCode
-            )
+            activity.requestPermissions(arrayOf(Manifest.permission.CAMERA), cameraPermissionReqCode)
             askedPermission = true
         } else {
             // Wait for permission result
         }
     }
 
-    /**
-     * Call from Activity#onRequestPermissionsResult
-
-     * @param requestCode  The request code passed in [android.support.v4.app.ActivityCompat.requestPermissions].
-     * *
-     * @param permissions  The requested permissions.
-     * *
-     * @param grantResults The grant results for the corresponding permissions
-     * *                     which is either [android.content.pm.PackageManager.PERMISSION_GRANTED]
-     * *                     or [android.content.pm.PackageManager.PERMISSION_DENIED]. Never null.
-     */
     fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if (requestCode == cameraPermissionReqCode) {
-            if (grantResults.size > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                // permission was granted
+            if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 barcodeView.resume()
             } else {
-                // TODO: display better error message.
                 displayFrameworkBugMessageAndExit()
             }
         }
     }
 
-    /**
-     * Call from Activity#onPause().
-     */
+
     fun onPause() {
         barcodeView.pause()
         inactivityTimer.cancel()
         beepManager.close()
     }
 
-    /**
-     * Call from Activity#onDestroy().
-     */
     fun onDestroy() {
         destroyed = true
         inactivityTimer.cancel()
     }
 
-    /**
-     * Call from Activity#onSaveInstanceState().
-     */
+
     fun onSaveInstanceState(outState: Bundle) {
         outState.putInt(SAVED_ORIENTATION_LOCK, this.orientationLock)
     }
 
-
     private fun finish() {
-        activity.finish()
-    }
-
-    protected fun returnResultTimeout() {
-        finish()
+        onFinish()
     }
 
 
-    protected fun displayFrameworkBugMessageAndExit() {
+    private fun displayFrameworkBugMessageAndExit() {
         if (activity.isFinishing || this.destroyed) {
             return
         }
@@ -253,14 +211,9 @@ class CaptureManager(private val activity: Activity, private val barcodeView: De
     }
 
     companion object {
-        private val TAG = CaptureManager::class.java.simpleName
-
-        var cameraPermissionReqCode = 250
-        private val SAVED_ORIENTATION_LOCK = "SAVED_ORIENTATION_LOCK"
-
-        // Delay long enough that the beep can be played.
-        // TODO: play beep in background
-        private val DELAY_BEEP: Long = 150
+        const val cameraPermissionReqCode = 250
+        private const val SAVED_ORIENTATION_LOCK = "SAVED_ORIENTATION_LOCK"
+        private const val DELAY_BEEP: Long = 150
 
 
     }

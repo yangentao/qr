@@ -48,9 +48,6 @@ class InactivityTimer(private val context: Context, private val callback: Runnab
         activity()
     }
 
-    /**
-     * Cancel the activity timer.
-     */
     fun cancel() {
         cancelCallback()
         unregisterReceiver()
