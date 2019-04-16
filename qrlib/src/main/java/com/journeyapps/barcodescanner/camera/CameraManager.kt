@@ -22,12 +22,12 @@ import android.os.Build
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
-import dev.entao.qr.camera.LightManager
 import com.google.zxing.client.android.camera.CameraConfigurationUtils
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.SourceData
 import dev.entao.qr.camera.AutoFocusManager
 import dev.entao.qr.camera.ConfigUtil
+import dev.entao.qr.camera.LightManager
 import java.io.IOException
 import java.util.*
 
@@ -202,10 +202,9 @@ class CameraManager(private val context: Context) {
      * Must be called from camera thread.
      */
     fun configure() {
-        if (camera == null) {
-            throw RuntimeException("Camera not open")
+        if (camera != null) {
+            setParameters()
         }
-        setParameters()
     }
 
     /**
@@ -221,19 +220,13 @@ class CameraManager(private val context: Context) {
         surface.setPreview(camera)
     }
 
-    /**
-     * Asks the camera hardware to begin drawing preview frames to the screen.
-     *
-     *
-     * Must be called from camera thread.
-     */
     fun startPreview() {
-        val theCamera = camera
-        if (theCamera != null && !previewing) {
+        val theCamera = camera ?: return
+        if (!previewing) {
             theCamera.startPreview()
             previewing = true
             focusManager = AutoFocusManager(theCamera)
-            if(cameraSettings.isAutoTorchEnabled) {
+            if (cameraSettings.isAutoTorchEnabled) {
                 lightManager = LightManager(context, this)
                 lightManager?.start()
             }
@@ -251,8 +244,8 @@ class CameraManager(private val context: Context) {
         focusManager = null
         lightManager?.stop()
         lightManager = null
-        if (camera != null && previewing) {
-            camera!!.stopPreview()
+        if (previewing) {
+            camera?.stopPreview()
             cameraPreviewCallback.setCallback(null)
             previewing = false
         }
@@ -265,37 +258,24 @@ class CameraManager(private val context: Context) {
      * Must be called from camera thread.
      */
     fun close() {
-        if (camera != null) {
-            camera!!.release()
-            camera = null
-        }
+        camera?.release()
+        camera = null
     }
 
     private fun setDesiredParameters(safeMode: Boolean) {
-        val parameters = defaultCameraParameters ?: return
+        val parameters = defaultCameraParameters
         ConfigUtil.setFocus(parameters)
+        ConfigUtil.setBarcodeSceneMode(parameters)
 
         if (!safeMode) {
-            CameraConfigurationUtils.setTorch(parameters, false)
-
-            if (cameraSettings.isScanInverted) {
-                CameraConfigurationUtils.setInvertColor(parameters)
-            }
-
-            if (cameraSettings.isBarcodeSceneModeEnabled) {
-                CameraConfigurationUtils.setBarcodeSceneMode(parameters)
-            }
-
-            if (cameraSettings.isMeteringEnabled) {
-                CameraConfigurationUtils.setVideoStabilization(parameters)
-                CameraConfigurationUtils.setFocusArea(parameters)
-                CameraConfigurationUtils.setMetering(parameters)
-            }
-
+            ConfigUtil.setTorch(parameters, false)
+            ConfigUtil.setVideoStabilization(parameters)
+            ConfigUtil.setFocusArea(parameters)
+            ConfigUtil.setMetering(parameters)
         }
 
         val previewSizes = getPreviewSizes(parameters)
-        if (previewSizes.size == 0) {
+        if (previewSizes.isEmpty()) {
             requestedPreviewSize = null
         } else {
             requestedPreviewSize = displayConfiguration!!.getBestPreviewSize(previewSizes, isCameraRotated)
@@ -350,14 +330,10 @@ class CameraManager(private val context: Context) {
         try {
             setDesiredParameters(false)
         } catch (e: Exception) {
-            // Failed, use safe mode
             try {
                 setDesiredParameters(true)
             } catch (e2: Exception) {
-                // Well, darn. Give up
-                Log.w(TAG, "Camera rejected even safe-mode parameters! No configuration")
             }
-
         }
 
         val realPreviewSize = camera!!.parameters.previewSize
@@ -413,20 +389,17 @@ class CameraManager(private val context: Context) {
         private val TAG = CameraManager::class.java.simpleName
 
         private fun getPreviewSizes(parameters: Camera.Parameters): List<Size> {
-            val rawSupportedSizes = parameters.supportedPreviewSizes
-            val previewSizes = ArrayList<Size>()
-            if (rawSupportedSizes == null) {
-                val defaultSize = parameters.previewSize
-                if (defaultSize != null) {
-                    // Work around potential platform bugs
-                    previewSizes.add(Size(defaultSize.width, defaultSize.height))
+            val supportedSizes = parameters.supportedPreviewSizes
+            val ls = ArrayList<Size>()
+            if (supportedSizes == null) {
+                val sz = parameters.previewSize ?: return ls
+                ls.add(Size(sz.width, sz.height))
+            } else {
+                for (size in supportedSizes) {
+                    ls.add(Size(size.width, size.height))
                 }
-                return previewSizes
             }
-            for (size in rawSupportedSizes) {
-                previewSizes.add(Size(size.width, size.height))
-            }
-            return previewSizes
+            return ls
         }
     }
 }

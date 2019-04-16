@@ -169,18 +169,6 @@ public final class CameraConfigurationUtils {
         }
     }
 
-    public static void setBarcodeSceneMode(Camera.Parameters parameters) {
-        if (Camera.Parameters.SCENE_MODE_BARCODE.equals(parameters.getSceneMode())) {
-            Log.i(TAG, "Barcode scene mode already set");
-            return;
-        }
-        String sceneMode = findSettableValue("scene mode",
-                parameters.getSupportedSceneModes(),
-                Camera.Parameters.SCENE_MODE_BARCODE);
-        if (sceneMode != null) {
-            parameters.setSceneMode(sceneMode);
-        }
-    }
 
     public static void setZoom(Camera.Parameters parameters, double targetZoomRatio) {
         if (parameters.isZoomSupported()) {
@@ -221,18 +209,6 @@ public final class CameraConfigurationUtils {
         return closestIndex;
     }
 
-    public static void setInvertColor(Camera.Parameters parameters) {
-        if (Camera.Parameters.EFFECT_NEGATIVE.equals(parameters.getColorEffect())) {
-            Log.i(TAG, "Negative effect already set");
-            return;
-        }
-        String colorMode = findSettableValue("color effect",
-                parameters.getSupportedColorEffects(),
-                Camera.Parameters.EFFECT_NEGATIVE);
-        if (colorMode != null) {
-            parameters.setColorEffect(colorMode);
-        }
-    }
 
     private static String findSettableValue(String name,
                                             Collection<String> supportedValues,

@@ -52,25 +52,21 @@ object ConfigUtil {
     }
 
     fun setTorch(parameters: Camera.Parameters, on: Boolean) {
-        val supportedFlashModes = parameters.supportedFlashModes
-        val flashMode: String?
-        if (on) {
-            flashMode = findSettableValue(
-                supportedFlashModes,
+        val flashMode: String? = if (on) {
+            findSettableValue(
+                parameters.supportedFlashModes,
                 Camera.Parameters.FLASH_MODE_TORCH,
                 Camera.Parameters.FLASH_MODE_ON
             )
         } else {
-            flashMode = findSettableValue(
-                supportedFlashModes,
+            findSettableValue(
+                parameters.supportedFlashModes,
                 Camera.Parameters.FLASH_MODE_OFF
             )
         }
         if (flashMode != null) {
             if (flashMode == parameters.flashMode) {
-                Log.i(TAG, "Flash mode already set to $flashMode")
             } else {
-                Log.i(TAG, "Setting flash mode to $flashMode")
                 parameters.flashMode = flashMode
             }
         }
@@ -130,52 +126,35 @@ object ConfigUtil {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
     fun setFocusArea(parameters: Camera.Parameters) {
         if (parameters.maxNumFocusAreas > 0) {
-            Log.i(TAG, "Old focus areas: " + toString(parameters.focusAreas)!!)
             val middleArea = buildMiddleArea(AREA_PER_1000)
-            Log.i(TAG, "Setting focus area to : " + toString(middleArea)!!)
             parameters.focusAreas = middleArea
-        } else {
-            Log.i(TAG, "Device does not support focus areas")
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
     fun setMetering(parameters: Camera.Parameters) {
         if (parameters.maxNumMeteringAreas > 0) {
-            Log.i(TAG, "Old metering areas: " + parameters.meteringAreas)
             val middleArea = buildMiddleArea(AREA_PER_1000)
-            Log.i(TAG, "Setting metering area to : " + toString(middleArea)!!)
             parameters.meteringAreas = middleArea
-        } else {
-            Log.i(TAG, "Device does not support metering areas")
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
     private fun buildMiddleArea(areaPer1000: Int): List<Camera.Area> {
         return listOf(Camera.Area(Rect(-areaPer1000, -areaPer1000, areaPer1000, areaPer1000), 1))
     }
 
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
     fun setVideoStabilization(parameters: Camera.Parameters) {
         if (parameters.isVideoStabilizationSupported) {
             if (parameters.videoStabilization) {
-                Log.i(TAG, "Video stabilization already enabled")
             } else {
-                Log.i(TAG, "Enabling video stabilization...")
                 parameters.videoStabilization = true
             }
-        } else {
-            Log.i(TAG, "This device does not support video stabilization")
         }
     }
 
     fun setBarcodeSceneMode(parameters: Camera.Parameters) {
         if (Camera.Parameters.SCENE_MODE_BARCODE == parameters.sceneMode) {
-            Log.i(TAG, "Barcode scene mode already set")
             return
         }
         val sceneMode = findSettableValue(
