@@ -48,16 +48,6 @@ import java.util.*
  */
 open class CameraPreview : ViewGroup {
 
-    /**
-     * Get the current CameraInstance. This may be null, and may change when
-     * pausing / resuming the preview.
-     *
-     *
-     * While the preview is active, getCameraInstance() will never be null.
-     *
-     * @return the current CameraInstance
-     * @see .isPreviewActive
-     */
     var cameraInstance: CameraInstance? = null
         private set
 
@@ -255,7 +245,7 @@ open class CameraPreview : ViewGroup {
      *
      * @return true if active
      */
-    protected val isActive: Boolean
+    val isActive: Boolean
         get() = cameraInstance != null
 
     private val displayRotation: Int
@@ -346,7 +336,7 @@ open class CameraPreview : ViewGroup {
      *
      * @param attrs the attributes
      */
-    protected fun initializeAttributes(attrs: AttributeSet?) {
+    fun initializeAttributes(attrs: AttributeSet?) {
         val framingRectWidth = PreviewConfig.width
         val framingRectHeight = PreviewConfig.height
 
@@ -444,22 +434,19 @@ open class CameraPreview : ViewGroup {
      */
     fun setTorch(on: Boolean) {
         torchOn = on
-        if (cameraInstance != null) {
-            cameraInstance!!.setTorch(on)
-        }
+        cameraInstance?.setTorch(on)
     }
 
     private fun containerSized(containerSize: Size) {
         this.containerSize = containerSize
-        if (cameraInstance != null) {
-            if (cameraInstance!!.displayConfiguration == null) {
-                displayConfiguration = DisplayConfiguration(displayRotation, containerSize)
-                displayConfiguration!!.previewScalingStrategy = previewScalingStrategy
-                cameraInstance!!.displayConfiguration = displayConfiguration
-                cameraInstance!!.configureCamera()
-                if (torchOn) {
-                    cameraInstance!!.setTorch(torchOn)
-                }
+        val ci = cameraInstance ?: return
+        if (ci.displayConfiguration == null) {
+            displayConfiguration = DisplayConfiguration(displayRotation, containerSize)
+            displayConfiguration!!.previewScalingStrategy = previewScalingStrategy
+            ci.displayConfiguration = displayConfiguration
+            ci.configureCamera()
+            if (torchOn) {
+                ci.setTorch(torchOn)
             }
         }
     }
@@ -599,11 +586,10 @@ open class CameraPreview : ViewGroup {
         Log.d(TAG, "pause()")
 
         openedOrientation = -1
-        if (cameraInstance != null) {
-            cameraInstance!!.close()
-            cameraInstance = null
-            isPreviewActive = false
-        }
+        cameraInstance?.close()
+        cameraInstance = null
+        isPreviewActive = false
+
         if (currentSurfaceSize == null && surfaceView != null) {
             val surfaceHolder = surfaceView!!.holder
             surfaceHolder.removeCallback(surfaceCallback)
@@ -625,7 +611,6 @@ open class CameraPreview : ViewGroup {
             Log.w(TAG, "initCamera called twice")
             return
         }
-
         cameraInstance = CameraInstance(context, stateHandler)
         cameraInstance?.open()
 
@@ -633,7 +618,6 @@ open class CameraPreview : ViewGroup {
         // don't need to.
         openedOrientation = displayRotation
     }
-
 
 
     private fun startCameraPreview(surface: CameraSurface) {
