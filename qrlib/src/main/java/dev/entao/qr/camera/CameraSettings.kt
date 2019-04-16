@@ -1,9 +1,9 @@
-package com.journeyapps.barcodescanner.camera
+package dev.entao.qr.camera
 
 /**
  *
  */
-class CameraSettings {
+object CameraSettings {
 
     /**
      * Default to false.

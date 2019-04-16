@@ -65,9 +65,9 @@ object CameraThread {
     }
 
     @Synchronized
-    fun push(runner: Runnable) {
+    fun push(block: () -> Unit) {
         openCount += 1
-        enqueue(runner)
+        enqueue(block)
     }
 
 

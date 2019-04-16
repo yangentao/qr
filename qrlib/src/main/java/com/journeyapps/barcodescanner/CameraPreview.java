@@ -90,7 +90,6 @@ public class CameraPreview extends ViewGroup {
 	private List<StateListener> stateListeners = new ArrayList<>();
 
 	private DisplayConfiguration displayConfiguration;
-	private CameraSettings cameraSettings = new CameraSettings();
 
 	// Size of this container, non-null after layout is performed
 	private Size containerSize;
@@ -531,24 +530,6 @@ public class CameraPreview extends ViewGroup {
 		return previewFramingRect;
 	}
 
-	/**
-	 * @return the CameraSettings currently in use
-	 */
-	public CameraSettings getCameraSettings() {
-		return cameraSettings;
-	}
-
-	/**
-	 * Set the CameraSettings. Use this to select a different camera, change exposure and torch
-	 * settings, and some other options.
-	 * <p>
-	 * This has no effect if the camera is already open.
-	 *
-	 * @param cameraSettings the new settings
-	 */
-	public void setCameraSettings(CameraSettings cameraSettings) {
-		this.cameraSettings = cameraSettings;
-	}
 
 	/**
 	 * Start the camera preview and decoding. Typically this should be called from the Activity's
@@ -700,7 +681,6 @@ public class CameraPreview extends ViewGroup {
 	 */
 	protected CameraInstance createCameraInstance() {
 		CameraInstance cameraInstance = new CameraInstance(getContext());
-		cameraInstance.setCameraSettings(cameraSettings);
 		return cameraInstance;
 	}
 

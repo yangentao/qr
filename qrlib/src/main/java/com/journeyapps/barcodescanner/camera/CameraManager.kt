@@ -26,6 +26,7 @@ import com.google.zxing.client.android.camera.CameraConfigurationUtils
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.SourceData
 import dev.entao.qr.camera.AutoFocusManager
+import dev.entao.qr.camera.CameraSettings
 import dev.entao.qr.camera.ConfigUtil
 import dev.entao.qr.camera.LightManager
 import java.io.IOException
@@ -67,8 +68,6 @@ class CameraManager(private val context: Context) {
     private var previewing: Boolean = false
     private var defaultParameters: String? = null
 
-    // User parameters
-    val cameraSettings: CameraSettings = CameraSettings()
 
     var displayConfiguration: DisplayConfiguration? = null
 
@@ -226,7 +225,7 @@ class CameraManager(private val context: Context) {
             theCamera.startPreview()
             previewing = true
             focusManager = AutoFocusManager(theCamera)
-            if (cameraSettings?.isAutoTorchEnabled == true) {
+            if (CameraSettings.isAutoTorchEnabled) {
                 lightManager = LightManager(context, this)
                 lightManager?.start()
             }
@@ -372,7 +371,7 @@ class CameraManager(private val context: Context) {
 
                 val parameters = camera!!.parameters
                 CameraConfigurationUtils.setTorch(parameters, on)
-                if (cameraSettings?.isExposureEnabled == true) {
+                if (CameraSettings.isExposureEnabled) {
                     CameraConfigurationUtils.setBestExposure(parameters, on)
                 }
                 camera!!.parameters = parameters

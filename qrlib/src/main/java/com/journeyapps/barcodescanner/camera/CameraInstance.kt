@@ -10,64 +10,24 @@ import dev.entao.qr.camera.CameraThread
 
 
 /**
- * 必须在主线程
+ * 在主线程
  */
 class CameraInstance(context: Context) {
 
     var surface: CameraSurface? = null
 
-    // The CameraManager is not thread-safe, and must only be used from the CameraThread.
     private val cameraManager: CameraManager = CameraManager(context)
     private var readyHandler: Handler? = null
     var displayConfiguration: DisplayConfiguration? = null
         set(configuration) {
             field = configuration
-            cameraManager!!.displayConfiguration = configuration
+            cameraManager.displayConfiguration = configuration
         }
     var isOpen = false
         private set
-    //open 前有效
-    val cameraSettings: CameraSettings get() = this.cameraManager.cameraSettings
 
     private val previewSize: Size?
         get() = cameraManager.previewSize
-
-    private val opener = Runnable {
-        try {
-            cameraManager.open()
-        } catch (e: Exception) {
-            notifyError(e)
-        }
-    }
-
-    private val configure = Runnable {
-        try {
-            cameraManager.configure()
-            if (readyHandler != null) {
-                readyHandler!!.obtainMessage(R.id.zxing_prewiew_size_ready, previewSize).sendToTarget()
-            }
-        } catch (e: Exception) {
-            notifyError(e)
-        }
-    }
-
-    private val previewStarter = Runnable {
-        try {
-            cameraManager.setPreviewDisplay(surface!!)
-            cameraManager.startPreview()
-        } catch (e: Exception) {
-            notifyError(e)
-        }
-    }
-
-    private val closer = Runnable {
-        try {
-            cameraManager.stopPreview()
-            cameraManager.close()
-        } catch (e: Exception) {
-        }
-        CameraThread.pop()
-    }
 
 
     fun setReadyHandler(readyHandler: Handler) {
@@ -79,25 +39,41 @@ class CameraInstance(context: Context) {
     }
 
     fun open() {
-        Util.validateMainThread()
-
         isOpen = true
-
-        CameraThread.push(opener)
+        CameraThread.push {
+            try {
+                cameraManager.open()
+            } catch (e: Exception) {
+                notifyError(e)
+            }
+        }
     }
 
     fun configureCamera() {
         Util.validateMainThread()
         validateOpen()
-
-        CameraThread.enqueue(configure)
+        CameraThread.enqueue {
+            try {
+                cameraManager.configure()
+                readyHandler?.obtainMessage(R.id.zxing_prewiew_size_ready, previewSize)?.sendToTarget()
+            } catch (e: Exception) {
+                notifyError(e)
+            }
+        }
     }
 
     fun startPreview() {
         Util.validateMainThread()
         validateOpen()
 
-        CameraThread.enqueue(previewStarter)
+        CameraThread.enqueue {
+            try {
+                cameraManager.setPreviewDisplay(surface!!)
+                cameraManager.startPreview()
+            } catch (e: Exception) {
+                notifyError(e)
+            }
+        }
     }
 
     fun setTorch(on: Boolean) {
@@ -108,7 +84,14 @@ class CameraInstance(context: Context) {
 
     fun close() {
         if (isOpen) {
-            CameraThread.enqueue(closer)
+            CameraThread.enqueue {
+                try {
+                    cameraManager.stopPreview()
+                    cameraManager.close()
+                } catch (e: Exception) {
+                }
+                CameraThread.pop()
+            }
         }
         isOpen = false
     }
@@ -131,7 +114,4 @@ class CameraInstance(context: Context) {
         }
     }
 
-    companion object {
-        private val TAG = CameraInstance::class.java.simpleName
-    }
 }

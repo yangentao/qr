@@ -6,7 +6,6 @@ import android.view.KeyEvent
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.google.zxing.ResultPoint
-import com.journeyapps.barcodescanner.camera.CameraSettings
 import dev.entao.qr.ScanConfig
 import dev.entao.ui.creator.createTextViewB
 import dev.entao.ui.ext.*
@@ -45,9 +44,7 @@ class DecoratedBarcodeView(context: Context) : FrameLayout(context) {
 
 
 	fun initializeFromIntent(config: ScanConfig) {
-		val settings = CameraSettings()
 		setStatusText(config.tips)
-		barcodeView.cameraSettings = settings
 		barcodeView.decoderFactory = DefaultDecoderFactory(config.decodeSet, null, config.charset)
 	}
 
