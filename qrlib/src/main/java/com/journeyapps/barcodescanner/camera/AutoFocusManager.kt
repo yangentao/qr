@@ -71,10 +71,6 @@ class AutoFocusManager(private val camera: Camera) {
 
     }
 
-
-    /**
-     * Stop auto-focus.
-     */
     fun stop() {
         stopped = true
         focusing = false

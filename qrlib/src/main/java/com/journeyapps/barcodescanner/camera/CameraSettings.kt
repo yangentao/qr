@@ -40,6 +40,6 @@ class CameraSettings {
      *
      * @return true if the torch is automatically controlled based on ambient light.
      */
-    val isAutoTorchEnabled = false
+    var isAutoTorchEnabled = false
 
 }
