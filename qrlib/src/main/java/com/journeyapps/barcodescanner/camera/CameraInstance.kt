@@ -13,12 +13,11 @@ import dev.entao.qr.camera.CameraThread
 /**
  * 在主线程
  */
-class CameraInstance(context: Context) {
+class CameraInstance(context: Context, val readyHandler: Handler?) {
 
     var surface: CameraSurface? = null
 
     private val cameraManager: CameraManager = CameraManager(context)
-    private var readyHandler: Handler? = null
     var displayConfiguration: DisplayConfiguration? = null
         set(configuration) {
             field = configuration
@@ -29,11 +28,6 @@ class CameraInstance(context: Context) {
 
     private val previewSize: Size?
         get() = cameraManager.previewSize
-
-
-    fun setReadyHandler(readyHandler: Handler) {
-        this.readyHandler = readyHandler
-    }
 
     fun setSurfaceHolder(surfaceHolder: SurfaceHolder) {
         surface = CameraSurface(surfaceHolder)
@@ -110,9 +104,7 @@ class CameraInstance(context: Context) {
     }
 
     private fun notifyError(error: Exception) {
-        if (readyHandler != null) {
-            readyHandler!!.obtainMessage(R.id.zxing_camera_error, error).sendToTarget()
-        }
+        readyHandler?.obtainMessage(R.id.zxing_camera_error, error)?.sendToTarget()
     }
 
 }

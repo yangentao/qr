@@ -167,7 +167,7 @@ class CameraManager(private val context: Context) {
                 val source = SourceData(data, cameraResolution.width, cameraResolution.height, format, cameraRotation)
                 callback.onPreview(source)
             } else {
-                Log.d(TAG, "Got preview callback, but no handler or resolution available")
+                Log.d("Camera", "Got preview callback, but no handler or resolution available")
             }
         }
     }
@@ -307,7 +307,7 @@ class CameraManager(private val context: Context) {
         } else {  // back-facing
             result = (cameraInfo!!.orientation - degrees + 360) % 360
         }
-        Log.i(TAG, "Camera Display Orientation: $result")
+        Log.i("Camera", "Camera Display Orientation: $result")
         return result
     }
 
@@ -320,7 +320,7 @@ class CameraManager(private val context: Context) {
             this.cameraRotation = calculateDisplayRotation()
             setCameraDisplayOrientation(cameraRotation)
         } catch (e: Exception) {
-            Log.w(TAG, "Failed to set rotation.")
+            Log.w("Camera", "Failed to set rotation.")
         }
 
         try {
@@ -380,22 +380,18 @@ class CameraManager(private val context: Context) {
         }
     }
 
-    companion object {
-
-        private val TAG = CameraManager::class.java.simpleName
-
-        private fun getPreviewSizes(parameters: Camera.Parameters): List<Size> {
-            val supportedSizes = parameters.supportedPreviewSizes
-            val ls = ArrayList<Size>()
-            if (supportedSizes == null) {
-                val sz = parameters.previewSize ?: return ls
-                ls.add(Size(sz.width, sz.height))
-            } else {
-                for (size in supportedSizes) {
-                    ls.add(Size(size.width, size.height))
-                }
+    private fun getPreviewSizes(parameters: Camera.Parameters): List<Size> {
+        val supportedSizes = parameters.supportedPreviewSizes
+        val ls = ArrayList<Size>()
+        if (supportedSizes == null) {
+            val sz = parameters.previewSize ?: return ls
+            ls.add(Size(sz.width, sz.height))
+        } else {
+            for (size in supportedSizes) {
+                ls.add(Size(size.width, size.height))
             }
-            return ls
         }
+        return ls
     }
+
 }
