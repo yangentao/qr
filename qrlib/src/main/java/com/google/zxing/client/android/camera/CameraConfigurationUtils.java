@@ -22,13 +22,7 @@ import android.hardware.Camera;
 import android.os.Build;
 import android.util.Log;
 
-import com.journeyapps.barcodescanner.camera.CameraSettings;
-
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 import java.util.regex.Pattern;
 
 /**
@@ -51,47 +45,7 @@ public final class CameraConfigurationUtils {
     private CameraConfigurationUtils() {
     }
 
-    public static void setFocus(Camera.Parameters parameters,
-								CameraSettings.FocusMode focusModeSetting,
-                                boolean safeMode) {
-        List<String> supportedFocusModes = parameters.getSupportedFocusModes();
-        String focusMode = null;
 
-		if (safeMode || focusModeSetting == CameraSettings.FocusMode.AUTO) {
-			focusMode = findSettableValue("focus mode",
-					supportedFocusModes,
-					Camera.Parameters.FOCUS_MODE_AUTO);
-		} else if (focusModeSetting == CameraSettings.FocusMode.CONTINUOUS) {
-			focusMode = findSettableValue("focus mode",
-					supportedFocusModes,
-					Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE,
-					Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO,
-					Camera.Parameters.FOCUS_MODE_AUTO);
-		} else if (focusModeSetting == CameraSettings.FocusMode.INFINITY) {
-			focusMode = findSettableValue("focus mode",
-					supportedFocusModes,
-					Camera.Parameters.FOCUS_MODE_INFINITY);
-		} else if (focusModeSetting == CameraSettings.FocusMode.MACRO) {
-			focusMode = findSettableValue("focus mode",
-					supportedFocusModes,
-					Camera.Parameters.FOCUS_MODE_MACRO);
-		}
-
-        // Maybe selected auto-focus but not available, so fall through here:
-        if (!safeMode && focusMode == null) {
-            focusMode = findSettableValue("focus mode",
-                    supportedFocusModes,
-                    Camera.Parameters.FOCUS_MODE_MACRO,
-                    Camera.Parameters.FOCUS_MODE_EDOF);
-        }
-        if (focusMode != null) {
-            if (focusMode.equals(parameters.getFocusMode())) {
-                Log.i(TAG, "Focus mode already set to " + focusMode);
-            } else {
-                parameters.setFocusMode(focusMode);
-            }
-        }
-    }
 
     public static void setTorch(Camera.Parameters parameters, boolean on) {
         List<String> supportedFlashModes = parameters.getSupportedFlashModes();

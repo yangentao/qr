@@ -22,10 +22,8 @@ import android.os.Build;
 import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
-
 import com.google.zxing.client.android.AmbientLightManager;
 import com.google.zxing.client.android.camera.CameraConfigurationUtils;
-import com.google.zxing.client.android.camera.open.OpenCameraInterface;
 import com.journeyapps.barcodescanner.Size;
 import com.journeyapps.barcodescanner.SourceData;
 import dev.entao.qr.camera.ConfigUtil;
@@ -51,432 +49,415 @@ import java.util.List;
  */
 public final class CameraManager {
 
-	private static final String TAG = CameraManager.class.getSimpleName();
+    private static final String TAG = CameraManager.class.getSimpleName();
 
-	private Camera camera;
-	private Camera.CameraInfo cameraInfo;
+    private Camera camera = null;
+    private Camera.CameraInfo cameraInfo = null;
 
-	private AutoFocusManager autoFocusManager;
-	private AmbientLightManager ambientLightManager;
+    private AutoFocusManager autoFocusManager;
+    private AmbientLightManager ambientLightManager;
 
-	private boolean previewing;
-	private String defaultParameters;
+    private boolean previewing;
+    private String defaultParameters;
 
-	// User parameters
-	private CameraSettings settings = new CameraSettings();
+    // User parameters
+    private CameraSettings settings = new CameraSettings();
 
-	private DisplayConfiguration displayConfiguration;
+    private DisplayConfiguration displayConfiguration;
 
-	// Actual chosen preview size
-	private Size requestedPreviewSize;
-	private Size previewSize;
+    // Actual chosen preview size
+    private Size requestedPreviewSize;
+    private Size previewSize;
 
-	private int rotationDegrees = -1;    // camera rotation vs display rotation
+    private int rotationDegrees = -1;    // camera rotation vs display rotation
 
-	private Context context;
+    private Context context;
 
 
-	private final class CameraPreviewCallback implements Camera.PreviewCallback {
-		private PreviewCallback callback;
+    private final class CameraPreviewCallback implements Camera.PreviewCallback {
+        private PreviewCallback callback;
 
-		private Size resolution;
+        private Size resolution;
 
-		public CameraPreviewCallback() {
-		}
+        public CameraPreviewCallback() {
+        }
 
-		public void setResolution(Size resolution) {
-			this.resolution = resolution;
-		}
+        public void setResolution(Size resolution) {
+            this.resolution = resolution;
+        }
 
-		public void setCallback(PreviewCallback callback) {
-			this.callback = callback;
-		}
+        public void setCallback(PreviewCallback callback) {
+            this.callback = callback;
+        }
 
-		@Override
-		public void onPreviewFrame(byte[] data, Camera camera) {
-			Size cameraResolution = resolution;
-			PreviewCallback callback = this.callback;
-			if (cameraResolution != null && callback != null) {
-				int format = camera.getParameters().getPreviewFormat();
-				SourceData source = new SourceData(data, cameraResolution.width, cameraResolution.height, format, getCameraRotation());
-				callback.onPreview(source);
-			} else {
-				Log.d(TAG, "Got preview callback, but no handler or resolution available");
-			}
-		}
-	}
+        @Override
+        public void onPreviewFrame(byte[] data, Camera camera) {
+            Size cameraResolution = resolution;
+            PreviewCallback callback = this.callback;
+            if (cameraResolution != null && callback != null) {
+                int format = camera.getParameters().getPreviewFormat();
+                SourceData source = new SourceData(data, cameraResolution.width, cameraResolution.height, format, getCameraRotation());
+                callback.onPreview(source);
+            } else {
+                Log.d(TAG, "Got preview callback, but no handler or resolution available");
+            }
+        }
+    }
 
-	/**
-	 * Preview frames are delivered here, which we pass on to the registered handler. Make sure to
-	 * clear the handler so it will only receive one message.
-	 */
-	private final CameraPreviewCallback cameraPreviewCallback;
+    /**
+     * Preview frames are delivered here, which we pass on to the registered handler. Make sure to
+     * clear the handler so it will only receive one message.
+     */
+    private final CameraPreviewCallback cameraPreviewCallback;
 
-	public CameraManager(Context context) {
-		this.context = context;
-		cameraPreviewCallback = new CameraPreviewCallback();
-	}
+    public CameraManager(Context context) {
+        this.context = context;
+        cameraPreviewCallback = new CameraPreviewCallback();
+    }
 
-	/**
-	 * Must be called from camera thread.
-	 */
-	public void open() {
-		camera = OpenCameraInterface.open(settings.getRequestedCameraId());
-		if (camera == null) {
-			throw new RuntimeException("Failed to open camera");
-		}
 
-		int cameraId = OpenCameraInterface.getCameraId(settings.getRequestedCameraId());
-		cameraInfo = new Camera.CameraInfo();
-		Camera.getCameraInfo(cameraId, cameraInfo);
-	}
+    public void open() {
+        for (int i = 0; i < Camera.getNumberOfCameras(); i++) {
+            Camera.CameraInfo info = new Camera.CameraInfo();
+            Camera.getCameraInfo(i, info);
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                camera = Camera.open(i);
+                this.cameraInfo = info;
+            }
+        }
+    }
 
-	/**
-	 * Configure the camera parameters, including preview size.
-	 * <p>
-	 * The camera must be opened before calling this.
-	 * <p>
-	 * Must be called from camera thread.
-	 */
-	public void configure() {
-		if (camera == null) {
-			throw new RuntimeException("Camera not open");
-		}
-		setParameters();
-	}
+    /**
+     * Configure the camera parameters, including preview size.
+     * <p>
+     * The camera must be opened before calling this.
+     * <p>
+     * Must be called from camera thread.
+     */
+    public void configure() {
+        if (camera == null) {
+            throw new RuntimeException("Camera not open");
+        }
+        setParameters();
+    }
 
-	/**
-	 * Must be called from camera thread.
-	 */
-	public void setPreviewDisplay(SurfaceHolder holder) throws IOException {
-		setPreviewDisplay(new CameraSurface(holder));
-	}
+    /**
+     * Must be called from camera thread.
+     */
+    public void setPreviewDisplay(SurfaceHolder holder) throws IOException {
+        setPreviewDisplay(new CameraSurface(holder));
+    }
 
-	public void setPreviewDisplay(CameraSurface surface) throws IOException {
-		surface.setPreview(camera);
-	}
+    public void setPreviewDisplay(CameraSurface surface) throws IOException {
+        surface.setPreview(camera);
+    }
 
-	/**
-	 * Asks the camera hardware to begin drawing preview frames to the screen.
-	 * <p>
-	 * Must be called from camera thread.
-	 */
-	public void startPreview() {
-		Camera theCamera = camera;
-		if (theCamera != null && !previewing) {
-			theCamera.startPreview();
-			previewing = true;
-			autoFocusManager = new AutoFocusManager(camera, settings);
-			ambientLightManager = new AmbientLightManager(context, this, settings);
-			ambientLightManager.start();
-		}
-	}
+    /**
+     * Asks the camera hardware to begin drawing preview frames to the screen.
+     * <p>
+     * Must be called from camera thread.
+     */
+    public void startPreview() {
+        Camera theCamera = camera;
+        if (theCamera != null && !previewing) {
+            theCamera.startPreview();
+            previewing = true;
+            autoFocusManager = new AutoFocusManager(camera);
+            ambientLightManager = new AmbientLightManager(context, this, settings);
+            ambientLightManager.start();
+        }
+    }
 
-	/**
-	 * Tells the camera to stop drawing preview frames.
-	 * <p>
-	 * Must be called from camera thread.
-	 */
-	public void stopPreview() {
-		if (autoFocusManager != null) {
-			autoFocusManager.stop();
-			autoFocusManager = null;
-		}
-		if (ambientLightManager != null) {
-			ambientLightManager.stop();
-			ambientLightManager = null;
-		}
-		if (camera != null && previewing) {
-			camera.stopPreview();
-			cameraPreviewCallback.setCallback(null);
-			previewing = false;
-		}
-	}
+    /**
+     * Tells the camera to stop drawing preview frames.
+     * <p>
+     * Must be called from camera thread.
+     */
+    public void stopPreview() {
+        if (autoFocusManager != null) {
+            autoFocusManager.stop();
+            autoFocusManager = null;
+        }
+        if (ambientLightManager != null) {
+            ambientLightManager.stop();
+            ambientLightManager = null;
+        }
+        if (camera != null && previewing) {
+            camera.stopPreview();
+            cameraPreviewCallback.setCallback(null);
+            previewing = false;
+        }
+    }
 
-	/**
-	 * Closes the camera driver if still in use.
-	 * <p>
-	 * Must be called from camera thread.
-	 */
-	public void close() {
-		if (camera != null) {
-			camera.release();
-			camera = null;
-		}
-	}
+    /**
+     * Closes the camera driver if still in use.
+     * <p>
+     * Must be called from camera thread.
+     */
+    public void close() {
+        if (camera != null) {
+            camera.release();
+            camera = null;
+        }
+    }
 
-	/**
-	 * @return true if the camera rotation is perpendicular to the current display rotation.
-	 */
-	public boolean isCameraRotated() {
-		if (rotationDegrees == -1) {
-			throw new IllegalStateException("Rotation not calculated yet. Call configure() first.");
-		}
-		return rotationDegrees % 180 != 0;
-	}
+    /**
+     * @return true if the camera rotation is perpendicular to the current display rotation.
+     */
+    public boolean isCameraRotated() {
+        if (rotationDegrees == -1) {
+            throw new IllegalStateException("Rotation not calculated yet. Call configure() first.");
+        }
+        return rotationDegrees % 180 != 0;
+    }
 
-	/**
-	 * @return the camera rotation relative to display rotation, in degrees. Typically 0 if the
-	 * display is in landscape orientation.
-	 */
-	public int getCameraRotation() {
-		return rotationDegrees;
-	}
+    /**
+     * @return the camera rotation relative to display rotation, in degrees. Typically 0 if the
+     * display is in landscape orientation.
+     */
+    public int getCameraRotation() {
+        return rotationDegrees;
+    }
 
-	private Camera.Parameters getDefaultCameraParameters() {
-		Camera.Parameters parameters = camera.getParameters();
-		if (defaultParameters == null) {
-			defaultParameters = parameters.flatten();
-		} else {
-			parameters.unflatten(defaultParameters);
-		}
-		return parameters;
-	}
+    private Camera.Parameters getDefaultCameraParameters() {
+        Camera.Parameters parameters = camera.getParameters();
+        if (defaultParameters == null) {
+            defaultParameters = parameters.flatten();
+        } else {
+            parameters.unflatten(defaultParameters);
+        }
+        return parameters;
+    }
 
-	private void setDesiredParameters(boolean safeMode) {
-		Camera.Parameters parameters = getDefaultCameraParameters();
+    private void setDesiredParameters(boolean safeMode) {
+        Camera.Parameters parameters = getDefaultCameraParameters();
+        if (parameters == null) {
+            return;
+        }
+        ConfigUtil.INSTANCE.setFocus(parameters);
 
-		//noinspection ConstantConditions
-		if (parameters == null) {
-			Log.w(TAG, "Device error: no camera parameters are available. Proceeding without configuration.");
-			return;
-		}
+        if (!safeMode) {
+            CameraConfigurationUtils.setTorch(parameters, false);
 
-		Log.i(TAG, "Initial camera parameters: " + parameters.flatten());
+            if (settings.isScanInverted()) {
+                CameraConfigurationUtils.setInvertColor(parameters);
+            }
 
-		if (safeMode) {
-			Log.w(TAG, "In camera config safe mode -- most settings will not be honored");
-		}
+            if (settings.isBarcodeSceneModeEnabled()) {
+                CameraConfigurationUtils.setBarcodeSceneMode(parameters);
+            }
 
-		settings.setAutoFocusEnabled(true);
-		settings.setContinuousFocusEnabled(true);
-		ConfigUtil.INSTANCE.findFocus(parameters);
+            if (settings.isMeteringEnabled()) {
+                CameraConfigurationUtils.setVideoStabilization(parameters);
+                CameraConfigurationUtils.setFocusArea(parameters);
+                CameraConfigurationUtils.setMetering(parameters);
+            }
 
-		if (!safeMode) {
-			CameraConfigurationUtils.setTorch(parameters, false);
+        }
 
-			if (settings.isScanInverted()) {
-				CameraConfigurationUtils.setInvertColor(parameters);
-			}
+        List<Size> previewSizes = getPreviewSizes(parameters);
+        if (previewSizes.size() == 0) {
+            requestedPreviewSize = null;
+        } else {
+            requestedPreviewSize = displayConfiguration.getBestPreviewSize(previewSizes, isCameraRotated());
 
-			if (settings.isBarcodeSceneModeEnabled()) {
-				CameraConfigurationUtils.setBarcodeSceneMode(parameters);
-			}
+            parameters.setPreviewSize(requestedPreviewSize.width, requestedPreviewSize.height);
+        }
 
-			if (settings.isMeteringEnabled()) {
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
-					CameraConfigurationUtils.setVideoStabilization(parameters);
-					CameraConfigurationUtils.setFocusArea(parameters);
-					CameraConfigurationUtils.setMetering(parameters);
-				}
-			}
+        if (Build.DEVICE.equals("glass-1")) {
+            // We need to set the FPS on Google Glass devices, otherwise the preview is scrambled.
+            // FIXME - can/should we do this for other devices as well?
+            CameraConfigurationUtils.setBestPreviewFPS(parameters);
+        }
 
-		}
 
-		List<Size> previewSizes = getPreviewSizes(parameters);
-		if (previewSizes.size() == 0) {
-			requestedPreviewSize = null;
-		} else {
-			requestedPreviewSize = displayConfiguration.getBestPreviewSize(previewSizes, isCameraRotated());
+        camera.setParameters(parameters);
+    }
 
-			parameters.setPreviewSize(requestedPreviewSize.width, requestedPreviewSize.height);
-		}
+    private static List<Size> getPreviewSizes(Camera.Parameters parameters) {
+        List<Camera.Size> rawSupportedSizes = parameters.getSupportedPreviewSizes();
+        List<Size> previewSizes = new ArrayList<>();
+        if (rawSupportedSizes == null) {
+            Camera.Size defaultSize = parameters.getPreviewSize();
+            if (defaultSize != null) {
+                // Work around potential platform bugs
+                previewSizes.add(new Size(defaultSize.width, defaultSize.height));
+            }
+            return previewSizes;
+        }
+        for (Camera.Size size : rawSupportedSizes) {
+            previewSizes.add(new Size(size.width, size.height));
+        }
+        return previewSizes;
+    }
 
-		if (Build.DEVICE.equals("glass-1")) {
-			// We need to set the FPS on Google Glass devices, otherwise the preview is scrambled.
-			// FIXME - can/should we do this for other devices as well?
-			CameraConfigurationUtils.setBestPreviewFPS(parameters);
-		}
+    private int calculateDisplayRotation() {
+        // http://developer.android.com/reference/android/hardware/Camera.html#setDisplayOrientation(int)
+        int rotation = displayConfiguration.getRotation();
+        int degrees = 0;
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
 
-		Log.i(TAG, "Final camera parameters: " + parameters.flatten());
+        int result;
+        if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (cameraInfo.orientation + degrees) % 360;
+            result = (360 - result) % 360;  // compensate the mirror
+        } else {  // back-facing
+            result = (cameraInfo.orientation - degrees + 360) % 360;
+        }
+        Log.i(TAG, "Camera Display Orientation: " + result);
+        return result;
+    }
 
-		camera.setParameters(parameters);
-	}
+    private void setCameraDisplayOrientation(int rotation) {
+        camera.setDisplayOrientation(rotation);
+    }
 
-	private static List<Size> getPreviewSizes(Camera.Parameters parameters) {
-		List<Camera.Size> rawSupportedSizes = parameters.getSupportedPreviewSizes();
-		List<Size> previewSizes = new ArrayList<>();
-		if (rawSupportedSizes == null) {
-			Camera.Size defaultSize = parameters.getPreviewSize();
-			if (defaultSize != null) {
-				// Work around potential platform bugs
-				previewSizes.add(new Size(defaultSize.width, defaultSize.height));
-			}
-			return previewSizes;
-		}
-		for (Camera.Size size : rawSupportedSizes) {
-			previewSizes.add(new Size(size.width, size.height));
-		}
-		return previewSizes;
-	}
+    private void setParameters() {
+        try {
+            this.rotationDegrees = calculateDisplayRotation();
+            setCameraDisplayOrientation(rotationDegrees);
+        } catch (Exception e) {
+            Log.w(TAG, "Failed to set rotation.");
+        }
+        try {
+            setDesiredParameters(false);
+        } catch (Exception e) {
+            // Failed, use safe mode
+            try {
+                setDesiredParameters(true);
+            } catch (Exception e2) {
+                // Well, darn. Give up
+                Log.w(TAG, "Camera rejected even safe-mode parameters! No configuration");
+            }
+        }
 
-	private int calculateDisplayRotation() {
-		// http://developer.android.com/reference/android/hardware/Camera.html#setDisplayOrientation(int)
-		int rotation = displayConfiguration.getRotation();
-		int degrees = 0;
-		switch (rotation) {
-			case Surface.ROTATION_0:
-				degrees = 0;
-				break;
-			case Surface.ROTATION_90:
-				degrees = 90;
-				break;
-			case Surface.ROTATION_180:
-				degrees = 180;
-				break;
-			case Surface.ROTATION_270:
-				degrees = 270;
-				break;
-		}
+        Camera.Size realPreviewSize = camera.getParameters().getPreviewSize();
+        if (realPreviewSize == null) {
+            previewSize = requestedPreviewSize;
+        } else {
+            previewSize = new Size(realPreviewSize.width, realPreviewSize.height);
+        }
+        cameraPreviewCallback.setResolution(previewSize);
+    }
 
-		int result;
-		if (cameraInfo.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-			result = (cameraInfo.orientation + degrees) % 360;
-			result = (360 - result) % 360;  // compensate the mirror
-		} else {  // back-facing
-			result = (cameraInfo.orientation - degrees + 360) % 360;
-		}
-		Log.i(TAG, "Camera Display Orientation: " + result);
-		return result;
-	}
+    /**
+     * This returns false if the camera is not opened yet, failed to open, or has
+     * been closed.
+     */
+    public boolean isOpen() {
+        return camera != null;
+    }
 
-	private void setCameraDisplayOrientation(int rotation) {
-		camera.setDisplayOrientation(rotation);
-	}
+    /**
+     * Actual preview size in *natural camera* orientation. null if not determined yet.
+     *
+     * @return preview size
+     */
+    public Size getNaturalPreviewSize() {
+        return previewSize;
+    }
 
-	private void setParameters() {
-		try {
-			this.rotationDegrees = calculateDisplayRotation();
-			setCameraDisplayOrientation(rotationDegrees);
-		} catch (Exception e) {
-			Log.w(TAG, "Failed to set rotation.");
-		}
-		try {
-			setDesiredParameters(false);
-		} catch (Exception e) {
-			// Failed, use safe mode
-			try {
-				setDesiredParameters(true);
-			} catch (Exception e2) {
-				// Well, darn. Give up
-				Log.w(TAG, "Camera rejected even safe-mode parameters! No configuration");
-			}
-		}
+    /**
+     * Actual preview size in *current display* rotation. null if not determined yet.
+     *
+     * @return preview size
+     */
+    public Size getPreviewSize() {
+        if (previewSize == null) {
+            return null;
+        } else if (this.isCameraRotated()) {
+            return previewSize.rotate();
+        } else {
+            return previewSize;
+        }
+    }
 
-		Camera.Size realPreviewSize = camera.getParameters().getPreviewSize();
-		if (realPreviewSize == null) {
-			previewSize = requestedPreviewSize;
-		} else {
-			previewSize = new Size(realPreviewSize.width, realPreviewSize.height);
-		}
-		cameraPreviewCallback.setResolution(previewSize);
-	}
+    /**
+     * A single preview frame will be returned to the supplied callback.
+     * <p>
+     * The thread on which this called is undefined, so a Handler should be used to post the result
+     * to the correct thread.
+     *
+     * @param callback The callback to receive the preview.
+     */
+    public void requestPreviewFrame(PreviewCallback callback) {
+        Camera theCamera = camera;
+        if (theCamera != null && previewing) {
+            cameraPreviewCallback.setCallback(callback);
+            theCamera.setOneShotPreviewCallback(cameraPreviewCallback);
+        }
+    }
 
-	/**
-	 * This returns false if the camera is not opened yet, failed to open, or has
-	 * been closed.
-	 */
-	public boolean isOpen() {
-		return camera != null;
-	}
+    public CameraSettings getCameraSettings() {
+        return settings;
+    }
 
-	/**
-	 * Actual preview size in *natural camera* orientation. null if not determined yet.
-	 *
-	 * @return preview size
-	 */
-	public Size getNaturalPreviewSize() {
-		return previewSize;
-	}
+    public void setCameraSettings(CameraSettings settings) {
+        this.settings = settings;
+    }
 
-	/**
-	 * Actual preview size in *current display* rotation. null if not determined yet.
-	 *
-	 * @return preview size
-	 */
-	public Size getPreviewSize() {
-		if (previewSize == null) {
-			return null;
-		} else if (this.isCameraRotated()) {
-			return previewSize.rotate();
-		} else {
-			return previewSize;
-		}
-	}
+    public DisplayConfiguration getDisplayConfiguration() {
+        return displayConfiguration;
+    }
 
-	/**
-	 * A single preview frame will be returned to the supplied callback.
-	 * <p>
-	 * The thread on which this called is undefined, so a Handler should be used to post the result
-	 * to the correct thread.
-	 *
-	 * @param callback The callback to receive the preview.
-	 */
-	public void requestPreviewFrame(PreviewCallback callback) {
-		Camera theCamera = camera;
-		if (theCamera != null && previewing) {
-			cameraPreviewCallback.setCallback(callback);
-			theCamera.setOneShotPreviewCallback(cameraPreviewCallback);
-		}
-	}
+    public void setDisplayConfiguration(DisplayConfiguration displayConfiguration) {
+        this.displayConfiguration = displayConfiguration;
+    }
 
-	public CameraSettings getCameraSettings() {
-		return settings;
-	}
+    public void setTorch(boolean on) {
+        if (camera != null) {
+            boolean isOn = isTorchOn();
+            if (on != isOn) {
+                if (autoFocusManager != null) {
+                    autoFocusManager.stop();
+                }
 
-	public void setCameraSettings(CameraSettings settings) {
-		this.settings = settings;
-	}
+                Camera.Parameters parameters = camera.getParameters();
+                CameraConfigurationUtils.setTorch(parameters, on);
+                if (settings.isExposureEnabled()) {
+                    CameraConfigurationUtils.setBestExposure(parameters, on);
+                }
+                camera.setParameters(parameters);
 
-	public DisplayConfiguration getDisplayConfiguration() {
-		return displayConfiguration;
-	}
+                if (autoFocusManager != null) {
+                    autoFocusManager.start();
+                }
+            }
+        }
+    }
 
-	public void setDisplayConfiguration(DisplayConfiguration displayConfiguration) {
-		this.displayConfiguration = displayConfiguration;
-	}
+    public boolean isTorchOn() {
+        Camera.Parameters parameters = camera.getParameters();
+        if (parameters != null) {
+            String flashMode = parameters.getFlashMode();
+            return flashMode != null &&
+                    (Camera.Parameters.FLASH_MODE_ON.equals(flashMode) ||
+                            Camera.Parameters.FLASH_MODE_TORCH.equals(flashMode));
+        } else {
+            return false;
+        }
+    }
 
-	public void setTorch(boolean on) {
-		if (camera != null) {
-			boolean isOn = isTorchOn();
-			if (on != isOn) {
-				if (autoFocusManager != null) {
-					autoFocusManager.stop();
-				}
-
-				Camera.Parameters parameters = camera.getParameters();
-				CameraConfigurationUtils.setTorch(parameters, on);
-				if (settings.isExposureEnabled()) {
-					CameraConfigurationUtils.setBestExposure(parameters, on);
-				}
-				camera.setParameters(parameters);
-
-				if (autoFocusManager != null) {
-					autoFocusManager.start();
-				}
-			}
-		}
-	}
-
-	public boolean isTorchOn() {
-		Camera.Parameters parameters = camera.getParameters();
-		if (parameters != null) {
-			String flashMode = parameters.getFlashMode();
-			return flashMode != null &&
-					(Camera.Parameters.FLASH_MODE_ON.equals(flashMode) ||
-							Camera.Parameters.FLASH_MODE_TORCH.equals(flashMode));
-		} else {
-			return false;
-		}
-	}
-
-	/**
-	 * Returns the Camera. This returns null if the camera is not opened yet, failed to open, or has
-	 * been closed.
-	 *
-	 * @return the Camera
-	 */
-	public Camera getCamera() {
-		return camera;
-	}
+    /**
+     * Returns the Camera. This returns null if the camera is not opened yet, failed to open, or has
+     * been closed.
+     *
+     * @return the Camera
+     */
+    public Camera getCamera() {
+        return camera;
+    }
 }

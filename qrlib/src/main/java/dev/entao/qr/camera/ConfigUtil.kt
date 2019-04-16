@@ -38,14 +38,17 @@ object ConfigUtil {
     private const val MAX_FPS = 20
     private const val AREA_PER_1000 = 400
 
-    fun findFocus(parameters: Camera.Parameters): String? {
-        return findSettableValue(
+    fun setFocus(parameters: Camera.Parameters) {
+        val s = findSettableValue(
             parameters.supportedFocusModes,
             Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE,
             Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO,
             Camera.Parameters.FOCUS_MODE_MACRO,
             Camera.Parameters.FOCUS_MODE_AUTO
         )
+        if (s != null) {
+            parameters.focusMode = s
+        }
     }
 
     fun setTorch(parameters: Camera.Parameters, on: Boolean) {

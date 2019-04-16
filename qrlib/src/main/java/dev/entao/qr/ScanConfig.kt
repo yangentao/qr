@@ -7,7 +7,6 @@ import com.google.zxing.BarcodeFormat
  */
 
 class ScanConfig {
-	var cameraId: Int = -1
 	var decodeSet: Set<BarcodeFormat> = setOf(BarcodeFormat.QR_CODE)
 	var tips: String = "请将条码置于取景框内扫描。"
 	var charset: String = "UTF-8"
