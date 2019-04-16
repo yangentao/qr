@@ -68,7 +68,7 @@ class CameraManager(private val context: Context) {
     private var defaultParameters: String? = null
 
     // User parameters
-    var cameraSettings = CameraSettings()
+    val cameraSettings: CameraSettings = CameraSettings()
 
     var displayConfiguration: DisplayConfiguration? = null
 
@@ -226,7 +226,7 @@ class CameraManager(private val context: Context) {
             theCamera.startPreview()
             previewing = true
             focusManager = AutoFocusManager(theCamera)
-            if (cameraSettings.isAutoTorchEnabled) {
+            if (cameraSettings?.isAutoTorchEnabled == true) {
                 lightManager = LightManager(context, this)
                 lightManager?.start()
             }
@@ -372,7 +372,7 @@ class CameraManager(private val context: Context) {
 
                 val parameters = camera!!.parameters
                 CameraConfigurationUtils.setTorch(parameters, on)
-                if (cameraSettings.isExposureEnabled) {
+                if (cameraSettings?.isExposureEnabled == true) {
                     CameraConfigurationUtils.setBestExposure(parameters, on)
                 }
                 camera!!.parameters = parameters

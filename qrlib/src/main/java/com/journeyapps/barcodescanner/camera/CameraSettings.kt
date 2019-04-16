@@ -10,7 +10,7 @@ class CameraSettings {
      *
      * @return true if exposure is enabled.
      */
-    val isExposureEnabled = false
+    var isExposureEnabled = false
     /**
      * Default to false.
      *
