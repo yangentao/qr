@@ -18,11 +18,9 @@ package com.journeyapps.barcodescanner.camera
 
 import android.content.Context
 import android.hardware.Camera
-import android.os.Build
 import android.util.Log
 import android.view.Surface
 import android.view.SurfaceHolder
-import com.google.zxing.client.android.camera.CameraConfigurationUtils
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.SourceData
 import dev.entao.qr.camera.*
@@ -279,11 +277,6 @@ class CameraManager(private val context: Context) {
             parameters.setPreviewSize(requestedPreviewSize!!.width, requestedPreviewSize!!.height)
         }
 
-        if (Build.DEVICE == "glass-1") {
-            // We need to set the FPS on Google Glass devices, otherwise the preview is scrambled.
-            // FIXME - can/should we do this for other devices as well?
-            CameraConfigurationUtils.setBestPreviewFPS(parameters)
-        }
 
 
         camera!!.parameters = parameters
@@ -362,20 +355,15 @@ class CameraManager(private val context: Context) {
         if (camera != null) {
             val isOn = isTorchOn
             if (on != isOn) {
-                if (focusManager != null) {
-                    focusManager!!.stop()
-                }
+                focusManager?.stop()
 
                 val parameters = camera!!.parameters
-                CameraConfigurationUtils.setTorch(parameters, on)
+                ConfigUtil.setTorch(parameters, on)
                 if (CameraSettings.isExposureEnabled) {
-                    CameraConfigurationUtils.setBestExposure(parameters, on)
+                    ConfigUtil.setBestExposure(parameters, on)
                 }
-                camera!!.parameters = parameters
-
-                if (focusManager != null) {
-                    focusManager!!.start()
-                }
+                camera?.parameters = parameters
+                focusManager?.start()
             }
         }
     }
