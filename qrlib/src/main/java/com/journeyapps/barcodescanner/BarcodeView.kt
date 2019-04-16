@@ -37,7 +37,7 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
     private fun createDecoder(): Decoder {
         val hints = HashMap<DecodeHintType, Any>()
         hints[DecodeHintType.NEED_RESULT_POINT_CALLBACK] = this
-        val decoderFactory: DecoderFactory = DefaultDecoderFactory(ScanConfig.decodeSet, null, ScanConfig.charset)
+        val decoderFactory = DefaultDecoderFactory(ScanConfig.decodeSet, null, ScanConfig.charset)
         return decoderFactory.createDecoder(hints)
     }
 

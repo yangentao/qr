@@ -11,13 +11,11 @@ import java.util.Map;
 /**
  * DecoderFactory that creates a MultiFormatReader with specified hints.
  */
-public class DefaultDecoderFactory implements DecoderFactory {
+public class DefaultDecoderFactory   {
     private Collection<BarcodeFormat> decodeFormats;
     private Map<DecodeHintType, ?> hints;
     private String characterSet;
 
-    public DefaultDecoderFactory() {
-    }
 
     public DefaultDecoderFactory(Collection<BarcodeFormat> decodeFormats, Map<DecodeHintType, ?> hints, String characterSet) {
         this.decodeFormats = decodeFormats;
@@ -25,17 +23,16 @@ public class DefaultDecoderFactory implements DecoderFactory {
         this.characterSet = characterSet;
     }
 
-    @Override
     public Decoder createDecoder(Map<DecodeHintType, ?> baseHints) {
         Map<DecodeHintType, Object> hints = new EnumMap<>(DecodeHintType.class);
 
         hints.putAll(baseHints);
 
-        if(this.hints != null) {
+        if (this.hints != null) {
             hints.putAll(this.hints);
         }
 
-        if(this.decodeFormats != null) {
+        if (this.decodeFormats != null) {
             hints.put(DecodeHintType.POSSIBLE_FORMATS, decodeFormats);
         }
 
