@@ -546,12 +546,16 @@ open class CameraPreview : ViewGroup {
      * Call from UI thread only.
      */
     fun resume() {
-        // This must be safe to call multiple times
-        Util.validateMainThread()
-        Log.d(TAG, "resume()")
+        if (cameraInstance != null) {
+            Log.w(TAG, "initCamera called twice")
+            return
+        }
+        cameraInstance = CameraInstance(context, stateHandler)
+        cameraInstance?.open()
 
-        // initCamera() does nothing if called twice, but does log a warning
-        initCamera()
+        // Keep track of the orientation we opened at, so that we don't reopen the camera if we
+        // don't need to.
+        openedOrientation = displayRotation
 
         if (currentSurfaceSize != null) {
             // The activity was paused but not stopped, so the surface still exists. Therefore
@@ -573,18 +577,7 @@ open class CameraPreview : ViewGroup {
         rotationListener!!.listen(context, rotationCallback)
     }
 
-    /**
-     * Pause scanning and the camera preview. Typically this should be called from the Activity's
-     * onPause() method.
-     *
-     *
-     * Call from UI thread only.
-     */
     open fun pause() {
-        // This must be safe to call multiple times.
-        Util.validateMainThread()
-        Log.d(TAG, "pause()")
-
         openedOrientation = -1
         cameraInstance?.close()
         cameraInstance = null
@@ -604,19 +597,6 @@ open class CameraPreview : ViewGroup {
         rotationListener!!.stop()
 
         fireState.previewStopped()
-    }
-
-    private fun initCamera() {
-        if (cameraInstance != null) {
-            Log.w(TAG, "initCamera called twice")
-            return
-        }
-        cameraInstance = CameraInstance(context, stateHandler)
-        cameraInstance?.open()
-
-        // Keep track of the orientation we opened at, so that we don't reopen the camera if we
-        // don't need to.
-        openedOrientation = displayRotation
     }
 
 

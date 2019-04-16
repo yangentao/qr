@@ -3,7 +3,7 @@ package dev.entao.qr
 import android.os.Handler
 import android.os.HandlerThread
 
-class QueueTask(val name: String) {
+class TaskHandler(val name: String) {
 
     val thread = HandlerThread(name)
     val handler = Handler(thread.looper)
@@ -13,16 +13,17 @@ class QueueTask(val name: String) {
         thread.start()
     }
 
-    fun stop() {
-        handler.looper.quit()
+    fun quit() {
+        handler.removeCallbacksAndMessages(null)
+        thread.quit()
     }
 
 
-    fun run(block: () -> Unit) {
+    fun post(block: () -> Unit) {
         handler.post(block)
     }
 
-    fun run(delay: Int, block: () -> Unit) {
+    fun post(delay: Int, block: () -> Unit) {
         handler.postDelayed(block, delay.toLong())
     }
 }

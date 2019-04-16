@@ -1,11 +1,13 @@
 package com.journeyapps.barcodescanner
 
 import android.content.Context
-import android.os.Handler
+import android.graphics.Rect
 import com.google.zxing.DecodeHintType
 import com.google.zxing.ResultPoint
-import dev.entao.qr.R
+import com.google.zxing.ResultPointCallback
+import com.journeyapps.barcodescanner.camera.PreviewCallback
 import dev.entao.qr.ScanConfig
+import dev.entao.qr.TaskHandler
 import java.util.*
 
 /**
@@ -21,49 +23,27 @@ import java.util.*
  *
  * @see CameraPreview for more details on the preview lifecycle.
  */
-class BarcodeView(context: Context) : CameraPreview(context) {
+class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallback {
 
     private var decoding = false
     private var callback: BarcodeCallback? = null
-    private var decoderThread: DecoderThread? = null
-    var decoderFactory: DecoderFactory = DefaultDecoderFactory(ScanConfig.decodeSet, null, ScanConfig.charset)
 
 
-    private val resultCallback = Handler.Callback { message ->
-        if (message.what == R.id.zxing_decode_succeeded) {
-            val result = message.obj as BarcodeResult
-
-            if (result != null) {
-                if (callback != null && decoding) {
-                    callback?.barcodeResult(result)
-                    stopDecoding()
-                }
-            }
-            return@Callback true
-        } else if (message.what == R.id.zxing_decode_failed) {
-            // Failed. Next preview is automatically tried.
-            return@Callback true
-        } else if (message.what == R.id.zxing_possible_result_points) {
-            val resultPoints = message.obj as List<ResultPoint>
-            if (callback != null && decoding) {
-                callback?.possibleResultPoints(resultPoints)
-            }
-            return@Callback true
-        }
-        false
-    }
-    private val resultHandler: Handler = Handler(resultCallback)
-
+    private var taskHandler: TaskHandler? = null
+    val decoder: Decoder = createDecoder()
+    var cropRect: Rect? = null
+    private var running = false
 
     private fun createDecoder(): Decoder {
-        val callback = DecoderResultPointCallback()
         val hints = HashMap<DecodeHintType, Any>()
-        hints[DecodeHintType.NEED_RESULT_POINT_CALLBACK] = callback
-        val decoder = this.decoderFactory.createDecoder(hints)
-        callback.decoder = decoder
-        return decoder
+        hints[DecodeHintType.NEED_RESULT_POINT_CALLBACK] = this
+        val decoderFactory: DecoderFactory = DefaultDecoderFactory(ScanConfig.decodeSet, null, ScanConfig.charset)
+        return decoderFactory.createDecoder(hints)
     }
 
+    override fun foundPossibleResultPoint(point: ResultPoint) {
+        decoder.foundPossibleResultPoint(point)
+    }
 
     fun decodeSingle(callback: BarcodeCallback) {
         this.decoding = true
@@ -72,9 +52,6 @@ class BarcodeView(context: Context) : CameraPreview(context) {
     }
 
 
-    /**
-     * Stop decoding, but do not stop the preview.
-     */
     fun stopDecoding() {
         this.decoding = false
         this.callback = null
@@ -85,37 +62,61 @@ class BarcodeView(context: Context) : CameraPreview(context) {
     private fun startDecoderThread() {
         stopDecoderThread() // To be safe
         if (this.decoding && isPreviewActive) {
-            // We only start the thread if both:
-            // 1. decoding was requested
-            // 2. the preview is active
-            decoderThread = DecoderThread(cameraInstance, createDecoder(), resultHandler)
-            decoderThread!!.cropRect = previewFramingRect
-            decoderThread!!.start()
+            cropRect = previewFramingRect
+            taskHandler = TaskHandler("decoder")
+            running = true
+            requestNextPreview()
         }
     }
 
     override fun previewStarted() {
         super.previewStarted()
-
         startDecoderThread()
     }
 
     private fun stopDecoderThread() {
-        if (decoderThread != null) {
-            decoderThread!!.stop()
-            decoderThread = null
+        running = false
+        taskHandler?.quit()
+        taskHandler = null
+    }
+
+
+    private fun requestNextPreview() {
+        val ci = cameraInstance ?: return
+        if (ci.isOpen) {
+            ci.requestPreview(PreviewCallback { sourceData ->
+                if (running) {
+                    taskHandler?.post {
+                        decode(sourceData)
+                    }
+                }
+            })
         }
     }
 
-    /**
-     * Stops the live preview and decoding.
-     *
-     *
-     * Call from the Activity's onPause() method.
-     */
+
     override fun pause() {
         stopDecoderThread()
-
         super.pause()
     }
+
+    private fun decode(sourceData: SourceData) {
+        val rect = this.cropRect ?: return requestNextPreview()
+
+        sourceData.cropRect = rect
+        val source = sourceData.createSource()
+        val rawResult = decoder.decode(source)
+        if (rawResult != null) {
+            val r = BarcodeResult(rawResult, sourceData)
+            callback?.barcodeResult(r)
+            stopDecoding()
+            return
+        }
+        val ps = decoder.possibleResultPoints
+        if (ps.isNotEmpty()) {
+            callback?.possibleResultPoints(ps)
+        }
+        requestNextPreview()
+    }
+
 }

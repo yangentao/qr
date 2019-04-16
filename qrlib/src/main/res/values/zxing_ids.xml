@@ -16,7 +16,6 @@
  -->
 <resources>
   <item type="id" name="zxing_decode"/>
-  <item type="id" name="zxing_decode_failed"/>
   <item type="id" name="zxing_decode_succeeded"/>
   <item type="id" name="zxing_possible_result_points"/>
   <item type="id" name="zxing_prewiew_size_ready"/>
