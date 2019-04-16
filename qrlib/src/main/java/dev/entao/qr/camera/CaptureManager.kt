@@ -40,7 +40,7 @@ import dev.entao.util.Task
  * - Setting the result and finishing the Activity when a barcode is scanned
  * - Displaying camera errors
  */
-class CaptureManager(private val activity: Activity, private val barcodeView: DecoratedBarcodeView) : CameraPreview.StateListener,
+class CaptureManager(private val activity: Activity, private val barcodeView: CameraView) : CameraPreview.StateListener,
     BarcodeCallback {
     private var orientationLock = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 

@@ -7,13 +7,14 @@ import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.SurfaceTexture
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Parcelable
-import android.util.AttributeSet
 import android.util.Log
-import android.view.*
+import android.view.SurfaceHolder
+import android.view.TextureView
+import android.view.ViewGroup
+import android.view.WindowManager
 import com.journeyapps.barcodescanner.camera.*
 import dev.entao.qr.PreviewConfig
 import dev.entao.qr.R
@@ -46,26 +47,14 @@ import java.util.*
  * 6. set surface size according to preview size
  * 7. set surface and start preview
  */
-open class CameraPreview : ViewGroup {
+open class CameraPreview(context: Context) : ViewGroup(context) {
 
     var cameraInstance: CameraInstance? = null
         private set
 
-    private var windowManager: WindowManager? = null
 
-    private var stateHandler: Handler? = null
+    private var stateHandler: Handler
 
-    /**
-     * Set to true to use TextureView instead of SurfaceView.
-     *
-     *
-     * Will only have an effect on API >= 14.
-     *
-     * @param useTextureView true to use TextureView.
-     */
-    var isUseTextureView = false
-
-    private var surfaceView: SurfaceView? = null
     private var textureView: TextureView? = null
 
     /**
@@ -208,10 +197,6 @@ open class CameraPreview : ViewGroup {
         false
     }
 
-    private val rotationCallback = RotationCallback {
-        // Make sure this is run on the main thread.
-        stateHandler!!.postDelayed({ rotationChanged() }, ROTATION_LISTENER_DELAY_MS.toLong())
-    }
 
     private val fireState = object : StateListener {
         override fun previewSized() {
@@ -249,7 +234,7 @@ open class CameraPreview : ViewGroup {
         get() = cameraInstance != null
 
     private val displayRotation: Int
-        get() = windowManager!!.defaultDisplay.rotation
+        get() = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
 
     interface StateListener {
         /**
@@ -298,31 +283,16 @@ open class CameraPreview : ViewGroup {
         }
     }
 
-    constructor(context: Context) : super(context) {
-        initialize(context, null, 0, 0)
-    }
-
-    constructor(context: Context, attrs: AttributeSet) : super(context, attrs) {
-        initialize(context, attrs, 0, 0)
-    }
-
-    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
-        initialize(context, attrs, defStyleAttr, 0)
-    }
-
-    private fun initialize(context: Context, attrs: AttributeSet?, defStyleAttr: Int, defStyleRes: Int) {
-        if (background == null) {
-            // Default to SurfaceView colour, so that there are less changes.
-            setBackgroundColor(Color.BLACK)
-        }
-
-        initializeAttributes(attrs)
-
-        windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
+    init {
+        setBackgroundColor(Color.BLACK)
+        initializeAttributes()
         stateHandler = Handler(stateCallback)
-
         rotationListener = RotationListener()
+    }
+
+    private val rotationCallback = RotationCallback {
+        // Make sure this is run on the main thread.
+        stateHandler.postDelayed({ rotationChanged() }, ROTATION_LISTENER_DELAY_MS.toLong())
     }
 
     override fun onAttachedToWindow() {
@@ -336,15 +306,13 @@ open class CameraPreview : ViewGroup {
      *
      * @param attrs the attributes
      */
-    fun initializeAttributes(attrs: AttributeSet?) {
+    fun initializeAttributes() {
         val framingRectWidth = PreviewConfig.width
         val framingRectHeight = PreviewConfig.height
 
         if (framingRectWidth > 0 && framingRectHeight > 0) {
             this.framingRectSize = Size(framingRectWidth, framingRectHeight)
         }
-
-        this.isUseTextureView = PreviewConfig.userTextureView
 
         // See zxing_attrs.xml for the enum values
         val scalingStrategyNumber = PreviewConfig.strategy
@@ -367,18 +335,10 @@ open class CameraPreview : ViewGroup {
 
     @SuppressLint("NewAPI")
     private fun setupSurfaceView() {
-        if (isUseTextureView && Build.VERSION.SDK_INT >= 14) {
-            textureView = TextureView(context)
-            textureView!!.surfaceTextureListener = surfaceTextureListener()
-            addView(textureView)
-        } else {
-            surfaceView = SurfaceView(context)
-            if (Build.VERSION.SDK_INT < 11) {
-                surfaceView!!.holder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS)
-            }
-            surfaceView!!.holder.addCallback(surfaceCallback)
-            addView(surfaceView)
-        }
+        textureView = TextureView(context)
+        textureView!!.surfaceTextureListener = surfaceTextureListener()
+        addView(textureView)
+
     }
 
     /**
@@ -505,9 +465,7 @@ open class CameraPreview : ViewGroup {
 
     private fun startPreviewIfReady() {
         if (currentSurfaceSize != null && previewSize != null && surfaceRect != null) {
-            if (surfaceView != null && currentSurfaceSize == Size(surfaceRect!!.width(), surfaceRect!!.height())) {
-                startCameraPreview(CameraSurface(surfaceView!!.holder))
-            } else if (textureView != null && Build.VERSION.SDK_INT >= 14 && textureView!!.surfaceTexture != null) {
+            if (textureView != null && textureView!!.surfaceTexture != null) {
                 if (previewSize != null) {
                     val transform = calculateTextureTransform(Size(textureView!!.width, textureView!!.height), previewSize!!)
                     textureView!!.setTransform(transform)
@@ -523,18 +481,7 @@ open class CameraPreview : ViewGroup {
     @SuppressLint("DrawAllocation")
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         containerSized(Size(r - l, b - t))
-
-        if (surfaceView != null) {
-            if (surfaceRect == null) {
-                // Match the container, to reduce the risk of issues. The preview should never be drawn
-                // while the surface has this size.
-                surfaceView!!.layout(0, 0, width, height)
-            } else {
-                surfaceView!!.layout(surfaceRect!!.left, surfaceRect!!.top, surfaceRect!!.right, surfaceRect!!.bottom)
-            }
-        } else if (textureView != null && Build.VERSION.SDK_INT >= 14) {
-            textureView!!.layout(0, 0, width, height)
-        }
+        textureView!!.layout(0, 0, width, height)
     }
 
 
@@ -561,10 +508,7 @@ open class CameraPreview : ViewGroup {
             // The activity was paused but not stopped, so the surface still exists. Therefore
             // surfaceCreated() won't be called, so init the camera here.
             startPreviewIfReady()
-        } else if (surfaceView != null) {
-            // Install the callback and wait for surfaceCreated() to init the camera.
-            surfaceView!!.holder.addCallback(surfaceCallback)
-        } else if (textureView != null && Build.VERSION.SDK_INT >= 14) {
+        } else if (textureView != null) {
             if (textureView!!.isAvailable) {
                 surfaceTextureListener().onSurfaceTextureAvailable(textureView!!.surfaceTexture, textureView!!.width, textureView!!.height)
             } else {
@@ -583,11 +527,7 @@ open class CameraPreview : ViewGroup {
         cameraInstance = null
         isPreviewActive = false
 
-        if (currentSurfaceSize == null && surfaceView != null) {
-            val surfaceHolder = surfaceView!!.holder
-            surfaceHolder.removeCallback(surfaceCallback)
-        }
-        if (currentSurfaceSize == null && textureView != null && Build.VERSION.SDK_INT >= 14) {
+        if (currentSurfaceSize == null && textureView != null) {
             textureView!!.surfaceTextureListener = null
         }
 

@@ -9,7 +9,7 @@ import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.journeyapps.barcodescanner.BarcodeResult
-import dev.entao.qr.camera.DecoratedBarcodeView
+import dev.entao.qr.camera.CameraView
 import dev.entao.appbase.ex.ImageStated
 import dev.entao.appbase.ex.sized
 import dev.entao.qr.camera.CaptureManager
@@ -32,7 +32,7 @@ class QRPage : TitlePage() {
     var title: String = "二维码扫描"
 
     lateinit var capture: CaptureManager
-    lateinit var barcodeScannerView: DecoratedBarcodeView
+    lateinit var barcodeScannerView: CameraView
 
     var inputTextView: TextView? = null
     var lightTextView: TextView? = null
@@ -42,7 +42,7 @@ class QRPage : TitlePage() {
 
     override fun onCreateContent(context: Context, contentView: LinearLayout) {
         titleBar.title(title)
-        barcodeScannerView = DecoratedBarcodeView(context)
+        barcodeScannerView = CameraView(context)
         contentView.addView(barcodeScannerView) {
             WidthFill.HeightFlex
         }

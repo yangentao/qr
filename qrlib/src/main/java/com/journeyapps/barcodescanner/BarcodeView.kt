@@ -83,11 +83,15 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
     private fun requestNextPreview() {
         val ci = cameraInstance ?: return
         if (ci.isOpen) {
-            ci.requestPreview(PreviewCallback { sourceData ->
-                taskHandler?.post {
-                    decode(sourceData)
+            ci.requestPreview(object : PreviewCallback {
+                override fun onPreview(sourceData: SourceData) {
+                    taskHandler?.post {
+                        decode(sourceData)
+                    }
                 }
+
             })
+
         }
     }
 
