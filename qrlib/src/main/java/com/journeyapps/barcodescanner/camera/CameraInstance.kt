@@ -6,6 +6,7 @@ import android.view.SurfaceHolder
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.Util
 import dev.entao.qr.R
+import dev.entao.qr.camera.CameraSurface
 import dev.entao.qr.camera.CameraThread
 
 

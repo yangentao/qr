@@ -14,6 +14,7 @@ import android.view.*;
 import com.journeyapps.barcodescanner.camera.*;
 import dev.entao.qr.PreviewConfig;
 import dev.entao.qr.R;
+import dev.entao.qr.camera.CameraSurface;
 
 import java.util.ArrayList;
 import java.util.List;

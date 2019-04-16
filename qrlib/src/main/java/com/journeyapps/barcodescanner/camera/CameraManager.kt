@@ -25,10 +25,7 @@ import android.view.SurfaceHolder
 import com.google.zxing.client.android.camera.CameraConfigurationUtils
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.SourceData
-import dev.entao.qr.camera.AutoFocusManager
-import dev.entao.qr.camera.CameraSettings
-import dev.entao.qr.camera.ConfigUtil
-import dev.entao.qr.camera.LightManager
+import dev.entao.qr.camera.*
 import java.io.IOException
 import java.util.*
 
@@ -216,7 +213,7 @@ class CameraManager(private val context: Context) {
 
     @Throws(IOException::class)
     fun setPreviewDisplay(surface: CameraSurface) {
-        surface.setPreview(camera)
+        surface.setPreview(camera!!)
     }
 
     fun startPreview() {
