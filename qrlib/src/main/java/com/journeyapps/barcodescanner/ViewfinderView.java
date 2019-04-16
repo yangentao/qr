@@ -18,7 +18,6 @@ package com.journeyapps.barcodescanner;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.res.Resources;
 import android.graphics.*;
 import android.util.AttributeSet;
 import android.view.View;
@@ -37,217 +36,213 @@ import java.util.List;
  * @author dswitkin@google.com (Daniel Switkin)
  */
 public class ViewfinderView extends View {
-	protected static final String TAG = ViewfinderView.class.getSimpleName();
 
-	protected static final int[] SCANNER_ALPHA = {0, 64, 128, 192, 255, 192, 128, 64};
-	protected static final long ANIMATION_DELAY = 80L;
-	protected static final int CURRENT_POINT_OPACITY = 0xA0;
-	protected static final int MAX_RESULT_POINTS = 20;
-	protected static final int POINT_SIZE = 6;
+    protected static final int[] SCANNER_ALPHA = {0, 64, 128, 192, 255, 192, 128, 64};
+    protected static final long ANIMATION_DELAY = 80L;
+    protected static final int CURRENT_POINT_OPACITY = 0xA0;
+    protected static final int MAX_RESULT_POINTS = 20;
+    protected static final int POINT_SIZE = 6;
 
-	protected final Paint paint;
-	protected Bitmap resultBitmap;
-	protected final int maskColor;
-	protected final int resultColor;
-	protected final int laserColor;
-	protected final int resultPointColor;
-	protected int scannerAlpha;
-	protected List<ResultPoint> possibleResultPoints;
-	protected List<ResultPoint> lastPossibleResultPoints;
-	protected CameraPreview cameraPreview;
+    protected final Paint paint;
+    protected Bitmap resultBitmap;
+    protected final int maskColor;
+    protected final int resultColor;
+    protected final int laserColor;
+    protected final int resultPointColor;
+    protected int scannerAlpha;
+    protected List<ResultPoint> possibleResultPoints;
+    protected List<ResultPoint> lastPossibleResultPoints;
+    protected CameraPreview cameraPreview;
 
-	// Cache the framingRect and previewFramingRect, so that we can still draw it after the preview
-	// stopped.
-	protected Rect framingRect;
-	protected Rect previewFramingRect;
+    // Cache the framingRect and previewFramingRect, so that we can still draw it after the preview
+    // stopped.
+    protected Rect framingRect;
+    protected Rect previewFramingRect;
 
-	// This constructor is used when the class is built from an XML resource.
-	public ViewfinderView(Context context, AttributeSet attrs) {
-		super(context, attrs);
+    // This constructor is used when the class is built from an XML resource.
+    public ViewfinderView(Context context, AttributeSet attrs) {
+        super(context, attrs);
 
-		// Initialize these once for performance rather than calling them every time in onDraw().
-		paint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        // Initialize these once for performance rather than calling them every time in onDraw().
+        paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-		Resources resources = getResources();
-
-
-		this.maskColor = ZColor.viewfinder_mask;
-		this.resultColor = ZColor.result_view;
-		this.laserColor = ZColor.viewfinder_laser;
-		this.resultPointColor = ZColor.possible_result_points;
+        this.maskColor = ZColor.viewfinder_mask;
+        this.resultColor = ZColor.result_view;
+        this.laserColor = ZColor.viewfinder_laser;
+        this.resultPointColor = ZColor.possible_result_points;
 
 
-		scannerAlpha = 0;
-		possibleResultPoints = new ArrayList<>(5);
-		lastPossibleResultPoints = null;
-	}
+        scannerAlpha = 0;
+        possibleResultPoints = new ArrayList<>(5);
+        lastPossibleResultPoints = null;
+    }
 
-	public void setCameraPreview(CameraPreview view) {
-		this.cameraPreview = view;
-		view.addStateListener(new CameraPreview.StateListener() {
-			@Override
-			public void previewSized() {
-				refreshSizes();
-				invalidate();
-			}
+    public void setCameraPreview(CameraPreview view) {
+        this.cameraPreview = view;
+        view.addStateListener(new CameraPreview.StateListener() {
+            @Override
+            public void previewSized() {
+                refreshSizes();
+                invalidate();
+            }
 
-			@Override
-			public void previewStarted() {
+            @Override
+            public void previewStarted() {
 
-			}
+            }
 
-			@Override
-			public void previewStopped() {
+            @Override
+            public void previewStopped() {
 
-			}
+            }
 
-			@Override
-			public void cameraError(Exception error) {
+            @Override
+            public void cameraError(Exception error) {
 
-			}
-		});
-	}
+            }
+        });
+    }
 
-	protected void refreshSizes() {
-		if (cameraPreview == null) {
-			return;
-		}
-		Rect framingRect = cameraPreview.getFramingRect();
-		Rect previewFramingRect = cameraPreview.getPreviewFramingRect();
-		if (framingRect != null && previewFramingRect != null) {
-			this.framingRect = framingRect;
-			this.previewFramingRect = previewFramingRect;
-		}
-	}
+    protected void refreshSizes() {
+        if (cameraPreview == null) {
+            return;
+        }
+        Rect framingRect = cameraPreview.getFramingRect();
+        Rect previewFramingRect = cameraPreview.getPreviewFramingRect();
+        if (framingRect != null && previewFramingRect != null) {
+            this.framingRect = framingRect;
+            this.previewFramingRect = previewFramingRect;
+        }
+    }
 
-	private int cw = App.INSTANCE.dp2px(25);
-	private int ch = App.INSTANCE.dp2px(5);
-	private int cm = -App.INSTANCE.dp2px(5);
+    private int cw = App.INSTANCE.dp2px(25);
+    private int ch = App.INSTANCE.dp2px(5);
+    private int cm = -App.INSTANCE.dp2px(5);
 
-	private void drawCorners(Canvas canvas, Rect frame) {
-		int w = cw;
-		int h = ch;
-		int m = cm;
-		paint.setColor(Color.rgb(50, 150, 0));
-		canvas.drawRect(m + frame.left, m + frame.top, m + (w + frame.left), m + (h + frame.top), paint);
-		canvas.drawRect(m + frame.left, m + frame.top, m + (h + frame.left), m + (w + frame.top), paint);
+    private void drawCorners(Canvas canvas, Rect frame) {
+        int w = cw;
+        int h = ch;
+        int m = cm;
+        paint.setColor(Color.rgb(50, 150, 0));
+        canvas.drawRect(m + frame.left, m + frame.top, m + (w + frame.left), m + (h + frame.top), paint);
+        canvas.drawRect(m + frame.left, m + frame.top, m + (h + frame.left), m + (w + frame.top), paint);
 
-		canvas.drawRect(-m + ((0 - w) + frame.right), m + frame.top, -m + (1 + frame.right), m + (h + frame.top), paint);
-		canvas.drawRect(-m + (-h + frame.right), m + frame.top, -m + frame.right + 1, m + (w + frame.top), paint);
+        canvas.drawRect(-m + ((0 - w) + frame.right), m + frame.top, -m + (1 + frame.right), m + (h + frame.top), paint);
+        canvas.drawRect(-m + (-h + frame.right), m + frame.top, -m + frame.right + 1, m + (w + frame.top), paint);
 
-		canvas.drawRect(m + frame.left, -m + (-(h - 1) + frame.bottom), m + (w + frame.left), -m + (1 + frame.bottom), paint);
-		canvas.drawRect(m + frame.left, -m + ((0 - w) + frame.bottom), m + (h + frame.left), -m + (1 + frame.bottom), paint);
+        canvas.drawRect(m + frame.left, -m + (-(h - 1) + frame.bottom), m + (w + frame.left), -m + (1 + frame.bottom), paint);
+        canvas.drawRect(m + frame.left, -m + ((0 - w) + frame.bottom), m + (h + frame.left), -m + (1 + frame.bottom), paint);
 
-		canvas.drawRect(-m + ((0 - w) + frame.right), -m + (-(h - 1) + frame.bottom), -m + (1 + frame.right), -m + (1 + frame.bottom), paint);
-		canvas.drawRect(-m + (-h + frame.right), -m + ((0 - w) + frame.bottom), -m + frame.right + 1, -m + (w - (w - 1) + frame.bottom), paint);
-	}
+        canvas.drawRect(-m + ((0 - w) + frame.right), -m + (-(h - 1) + frame.bottom), -m + (1 + frame.right), -m + (1 + frame.bottom), paint);
+        canvas.drawRect(-m + (-h + frame.right), -m + ((0 - w) + frame.bottom), -m + frame.right + 1, -m + (w - (w - 1) + frame.bottom), paint);
+    }
 
-	@SuppressLint("DrawAllocation")
-	@Override
-	public void onDraw(Canvas canvas) {
-		refreshSizes();
-		if (framingRect == null || previewFramingRect == null) {
-			return;
-		}
+    @SuppressLint("DrawAllocation")
+    @Override
+    public void onDraw(Canvas canvas) {
+        refreshSizes();
+        if (framingRect == null || previewFramingRect == null) {
+            return;
+        }
 
-		Rect frame = framingRect;
-		Rect previewFrame = previewFramingRect;
+        Rect frame = framingRect;
+        Rect previewFrame = previewFramingRect;
 
-		int width = canvas.getWidth();
-		int height = canvas.getHeight();
+        int width = canvas.getWidth();
+        int height = canvas.getHeight();
 
-		// Draw the exterior (i.e. outside the framing rect) darkened
-		paint.setColor(resultBitmap != null ? resultColor : maskColor);
-		canvas.drawRect(0, 0, width, frame.top, paint);
-		canvas.drawRect(0, frame.top, frame.left, frame.bottom + 1, paint);
-		canvas.drawRect(frame.right + 1, frame.top, width, frame.bottom + 1, paint);
-		canvas.drawRect(0, frame.bottom + 1, width, height, paint);
+        // Draw the exterior (i.e. outside the framing rect) darkened
+        paint.setColor(resultBitmap != null ? resultColor : maskColor);
+        canvas.drawRect(0, 0, width, frame.top, paint);
+        canvas.drawRect(0, frame.top, frame.left, frame.bottom + 1, paint);
+        canvas.drawRect(frame.right + 1, frame.top, width, frame.bottom + 1, paint);
+        canvas.drawRect(0, frame.bottom + 1, width, height, paint);
 
-		if (resultBitmap != null) {
-			// Draw the opaque result bitmap over the scanning rectangle
-			paint.setAlpha(CURRENT_POINT_OPACITY);
-			canvas.drawBitmap(resultBitmap, null, frame, paint);
-		} else {
-			// Draw a red "laser scanner" line through the middle to show decoding is active
-			paint.setColor(laserColor);
-			paint.setAlpha(SCANNER_ALPHA[scannerAlpha]);
-			scannerAlpha = (scannerAlpha + 1) % SCANNER_ALPHA.length;
-			int middle = frame.height() / 2 + frame.top;
-			canvas.drawRect(frame.left + 2, middle - 1, frame.right - 1, middle + 2, paint);
+        if (resultBitmap != null) {
+            // Draw the opaque result bitmap over the scanning rectangle
+            paint.setAlpha(CURRENT_POINT_OPACITY);
+            canvas.drawBitmap(resultBitmap, null, frame, paint);
+        } else {
+            // Draw a red "laser scanner" line through the middle to show decoding is active
+            paint.setColor(laserColor);
+            paint.setAlpha(SCANNER_ALPHA[scannerAlpha]);
+            scannerAlpha = (scannerAlpha + 1) % SCANNER_ALPHA.length;
+            int middle = frame.height() / 2 + frame.top;
+            canvas.drawRect(frame.left + 2, middle - 1, frame.right - 1, middle + 2, paint);
 
-			float scaleX = frame.width() / (float) previewFrame.width();
-			float scaleY = frame.height() / (float) previewFrame.height();
+            float scaleX = frame.width() / (float) previewFrame.width();
+            float scaleY = frame.height() / (float) previewFrame.height();
 
-			List<ResultPoint> currentPossible = possibleResultPoints;
-			List<ResultPoint> currentLast = lastPossibleResultPoints;
-			int frameLeft = frame.left;
-			int frameTop = frame.top;
-			if (currentPossible.isEmpty()) {
-				lastPossibleResultPoints = null;
-			} else {
-				possibleResultPoints = new ArrayList<>(5);
-				lastPossibleResultPoints = currentPossible;
-				paint.setAlpha(CURRENT_POINT_OPACITY);
-				paint.setColor(resultPointColor);
-				for (ResultPoint point : currentPossible) {
-					canvas.drawCircle(frameLeft + (int) (point.getX() * scaleX),
-							frameTop + (int) (point.getY() * scaleY),
-							POINT_SIZE, paint);
-				}
-			}
-			if (currentLast != null) {
-				paint.setAlpha(CURRENT_POINT_OPACITY / 2);
-				paint.setColor(resultPointColor);
-				float radius = POINT_SIZE / 2.0f;
-				for (ResultPoint point : currentLast) {
-					canvas.drawCircle(frameLeft + (int) (point.getX() * scaleX),
-							frameTop + (int) (point.getY() * scaleY),
-							radius, paint);
-				}
-			}
+            List<ResultPoint> currentPossible = possibleResultPoints;
+            List<ResultPoint> currentLast = lastPossibleResultPoints;
+            int frameLeft = frame.left;
+            int frameTop = frame.top;
+            if (currentPossible.isEmpty()) {
+                lastPossibleResultPoints = null;
+            } else {
+                possibleResultPoints = new ArrayList<>(5);
+                lastPossibleResultPoints = currentPossible;
+                paint.setAlpha(CURRENT_POINT_OPACITY);
+                paint.setColor(resultPointColor);
+                for (ResultPoint point : currentPossible) {
+                    canvas.drawCircle(frameLeft + (int) (point.getX() * scaleX),
+                            frameTop + (int) (point.getY() * scaleY),
+                            POINT_SIZE, paint);
+                }
+            }
+            if (currentLast != null) {
+                paint.setAlpha(CURRENT_POINT_OPACITY / 2);
+                paint.setColor(resultPointColor);
+                float radius = POINT_SIZE / 2.0f;
+                for (ResultPoint point : currentLast) {
+                    canvas.drawCircle(frameLeft + (int) (point.getX() * scaleX),
+                            frameTop + (int) (point.getY() * scaleY),
+                            radius, paint);
+                }
+            }
 
-			// Request another update at the animation interval, but only repaint the laser line,
-			// not the entire viewfinder mask.
-			postInvalidateDelayed(ANIMATION_DELAY,
-					frame.left - POINT_SIZE,
-					frame.top - POINT_SIZE,
-					frame.right + POINT_SIZE,
-					frame.bottom + POINT_SIZE);
-		}
-		drawCorners(canvas, frame);
-	}
+            // Request another update at the animation interval, but only repaint the laser line,
+            // not the entire viewfinder mask.
+            postInvalidateDelayed(ANIMATION_DELAY,
+                    frame.left - POINT_SIZE,
+                    frame.top - POINT_SIZE,
+                    frame.right + POINT_SIZE,
+                    frame.bottom + POINT_SIZE);
+        }
+        drawCorners(canvas, frame);
+    }
 
-	public void drawViewfinder() {
-		Bitmap resultBitmap = this.resultBitmap;
-		this.resultBitmap = null;
-		if (resultBitmap != null) {
-			resultBitmap.recycle();
-		}
-		invalidate();
-	}
+    public void drawViewfinder() {
+        Bitmap resultBitmap = this.resultBitmap;
+        this.resultBitmap = null;
+        if (resultBitmap != null) {
+            resultBitmap.recycle();
+        }
+        invalidate();
+    }
 
-	/**
-	 * Draw a bitmap with the result points highlighted instead of the live scanning display.
-	 *
-	 * @param result An image of the result.
-	 */
-	public void drawResultBitmap(Bitmap result) {
-		resultBitmap = result;
-		invalidate();
-	}
+    /**
+     * Draw a bitmap with the result points highlighted instead of the live scanning display.
+     *
+     * @param result An image of the result.
+     */
+    public void drawResultBitmap(Bitmap result) {
+        resultBitmap = result;
+        invalidate();
+    }
 
-	/**
-	 * Only call from the UI thread.
-	 *
-	 * @param point a point to draw, relative to the preview frame
-	 */
-	public void addPossibleResultPoint(ResultPoint point) {
-		List<ResultPoint> points = possibleResultPoints;
-		points.add(point);
-		int size = points.size();
-		if (size > MAX_RESULT_POINTS) {
-			// trim it
-			points.subList(0, size - MAX_RESULT_POINTS / 2).clear();
-		}
-	}
+    /**
+     * Only call from the UI thread.
+     *
+     * @param point a point to draw, relative to the preview frame
+     */
+    public void addPossibleResultPoint(ResultPoint point) {
+        List<ResultPoint> points = possibleResultPoints;
+        points.add(point);
+        int size = points.size();
+        if (size > MAX_RESULT_POINTS) {
+            // trim it
+            points.subList(0, size - MAX_RESULT_POINTS / 2).clear();
+        }
+    }
 }

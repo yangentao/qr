@@ -41,7 +41,7 @@ import dev.entao.util.Task
  * - Setting the result and finishing the Activity when a barcode is scanned
  * - Displaying camera errors
  */
-class CaptureManager(private val activity: Activity, private val barcodeView: DecoratedBarcodeView, config: ScanConfig) : CameraPreview.StateListener,
+class CaptureManager(private val activity: Activity, private val barcodeView: DecoratedBarcodeView) : CameraPreview.StateListener,
     BarcodeCallback {
     private var orientationLock = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
@@ -65,12 +65,12 @@ class CaptureManager(private val activity: Activity, private val barcodeView: De
         activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         barcodeView.barcodeView.addStateListener(this)
         lockOrientation()
-        beepManager.isBeepEnabled = config.beep
+        beepManager.isBeepEnabled = ScanConfig.beep
         beepManager.updatePrefs()
-        if (config.timeout > 0) {
+        if (ScanConfig.timeout > 0) {
             handler.postDelayed({
                 finish()
-            }, config.timeout.toLong())
+            }, ScanConfig.timeout.toLong())
         }
     }
 

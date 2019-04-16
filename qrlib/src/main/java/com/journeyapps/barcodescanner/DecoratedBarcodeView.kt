@@ -16,7 +16,7 @@ import dev.entao.ui.ext.*
 
  * To customize the UI, use BarcodeView and ViewfinderView directly.
  */
-class DecoratedBarcodeView(context: Context, config: ScanConfig) : FrameLayout(context) {
+class DecoratedBarcodeView(context: Context) : FrameLayout(context) {
     val barcodeView: BarcodeView = BarcodeView(context).genId()
     val viewFinder: ViewfinderView = ViewfinderView(context, null).genId()
     private val statusView: TextView = context.createTextViewB().textColorWhite().backColor(Color.TRANSPARENT)
@@ -29,8 +29,8 @@ class DecoratedBarcodeView(context: Context, config: ScanConfig) : FrameLayout(c
         addView(viewFinder, FParam.fill())
         viewFinder.setCameraPreview(barcodeView)
         addView(statusView, FParam.Wrap.GravityTopCenter.margins(20))
-        setStatusText(config.tips)
-        barcodeView.decoderFactory = DefaultDecoderFactory(config.decodeSet, null, config.charset)
+        setStatusText(ScanConfig.tips)
+        barcodeView.decoderFactory = DefaultDecoderFactory(ScanConfig.decodeSet, null, ScanConfig.charset)
     }
 
 
@@ -51,11 +51,6 @@ class DecoratedBarcodeView(context: Context, config: ScanConfig) : FrameLayout(c
 
     fun decodeSingle(callback: BarcodeCallback) {
         barcodeView.decodeSingle(WrappedCallback(callback))
-    }
-
-
-    fun decodeContinuous(callback: BarcodeCallback) {
-        barcodeView.decodeContinuous(WrappedCallback(callback))
     }
 
 

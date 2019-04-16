@@ -9,10 +9,10 @@ import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.journeyapps.barcodescanner.BarcodeResult
-import dev.entao.qr.camera.CaptureManager
 import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import dev.entao.appbase.ex.ImageStated
 import dev.entao.appbase.ex.sized
+import dev.entao.qr.camera.CaptureManager
 import dev.entao.ui.base.act
 import dev.entao.ui.base.popPage
 import dev.entao.ui.creator.createLinearHorizontal
@@ -30,7 +30,6 @@ import dev.entao.ui.page.TitlePage
 class QRPage : TitlePage() {
 
     var title: String = "二维码扫描"
-    var config: ScanConfig = ScanConfig()
 
     lateinit var capture: CaptureManager
     lateinit var barcodeScannerView: DecoratedBarcodeView
@@ -43,11 +42,11 @@ class QRPage : TitlePage() {
 
     override fun onCreateContent(context: Context, contentView: LinearLayout) {
         titleBar.title(title)
-        barcodeScannerView = DecoratedBarcodeView(context, config)
+        barcodeScannerView = DecoratedBarcodeView(context)
         contentView.addView(barcodeScannerView) {
             WidthFill.HeightFlex
         }
-        capture = CaptureManager(act, barcodeScannerView, config)
+        capture = CaptureManager(act, barcodeScannerView)
         capture.onFinish = {
             popPage()
         }
@@ -60,7 +59,7 @@ class QRPage : TitlePage() {
         contentView.addViewParam(ll) {
             widthFill().heightWrap()
         }
-        if (config.enableManualInput) {
+        if (ScanConfig.enableManualInput) {
             val tv = makeButton(R.mipmap.qr_round, R.mipmap.qr_round2)
             tv.text = "手动输入"
             ll.addView(tv) {
@@ -72,7 +71,7 @@ class QRPage : TitlePage() {
             }
 
         }
-        if (config.enableLight) {
+        if (ScanConfig.enableLight) {
             val tv = makeButton(R.mipmap.light, R.mipmap.light2)
             tv.text = "开灯"
             ll.addViewParam(tv) {
