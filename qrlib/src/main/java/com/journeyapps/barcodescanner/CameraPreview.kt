@@ -17,7 +17,6 @@ import android.view.WindowManager
 import com.journeyapps.barcodescanner.camera.*
 import dev.entao.qr.PreviewConfig
 import dev.entao.qr.R
-import dev.entao.qr.camera.CameraSurface
 import java.util.*
 
 /**
@@ -450,7 +449,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
                     textureView!!.setTransform(transform)
                 }
 
-                startCameraPreview(CameraSurface(textureView!!.surfaceTexture))
+                startCameraPreview(textureView!!.surfaceTexture)
             } else {
                 // Surface is not the correct size yet
             }
@@ -519,11 +518,10 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     }
 
 
-    private fun startCameraPreview(surface: CameraSurface) {
+    private fun startCameraPreview(texure: SurfaceTexture) {
         if (!isPreviewActive && cameraInstance != null) {
             Log.i(TAG, "Starting preview")
-            cameraInstance!!.surface = surface
-            cameraInstance!!.startPreview()
+            cameraInstance!!.startPreview(texure)
             isPreviewActive = true
 
             previewStarted()

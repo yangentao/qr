@@ -17,13 +17,16 @@
 package com.journeyapps.barcodescanner.camera
 
 import android.content.Context
+import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.util.Log
 import android.view.Surface
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.SourceData
-import dev.entao.qr.camera.*
-import java.io.IOException
+import dev.entao.qr.camera.AutoFocusManager
+import dev.entao.qr.camera.CameraSettings
+import dev.entao.qr.camera.ConfigUtil
+import dev.entao.qr.camera.LightManager
 import java.util.*
 
 /**
@@ -200,13 +203,9 @@ class CameraManager(private val context: Context) {
         }
     }
 
-    @Throws(IOException::class)
-    fun setPreviewDisplay(surface: CameraSurface) {
-        surface.setPreview(camera!!)
-    }
-
-    fun startPreview() {
+    fun startPreview(texure: SurfaceTexture) {
         val theCamera = camera ?: return
+        theCamera .setPreviewTexture(texure)
         if (!previewing) {
             theCamera.startPreview()
             previewing = true

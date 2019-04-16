@@ -56,7 +56,7 @@ class AutoFocusManager(private val camera: Camera) {
         }
     }
 
-    private val autoFocusCallback = Camera.AutoFocusCallback { ok, cam ->
+    private val autoFocusCallback = Camera.AutoFocusCallback { ok, _ ->
         focusing = false
         logd("Focus Result: ", ok)
         handler.postDelayed({

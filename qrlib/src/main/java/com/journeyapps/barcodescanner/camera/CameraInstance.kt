@@ -1,11 +1,11 @@
 package com.journeyapps.barcodescanner.camera
 
 import android.content.Context
+import android.graphics.SurfaceTexture
 import android.os.Handler
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.Util
 import dev.entao.qr.R
-import dev.entao.qr.camera.CameraSurface
 import dev.entao.qr.camera.CameraThread
 
 
@@ -13,8 +13,6 @@ import dev.entao.qr.camera.CameraThread
  * 在主线程
  */
 class CameraInstance(context: Context, val readyHandler: Handler?) {
-
-    var surface: CameraSurface? = null
 
     private val cameraManager: CameraManager = CameraManager(context)
     var displayConfiguration: DisplayConfiguration? = null
@@ -52,14 +50,13 @@ class CameraInstance(context: Context, val readyHandler: Handler?) {
         }
     }
 
-    fun startPreview() {
+    fun startPreview(texure: SurfaceTexture) {
         Util.validateMainThread()
         validateOpen()
 
         CameraThread.enqueue {
             try {
-                cameraManager.setPreviewDisplay(surface!!)
-                cameraManager.startPreview()
+                cameraManager.startPreview(texure)
             } catch (e: Exception) {
                 notifyError(e)
             }

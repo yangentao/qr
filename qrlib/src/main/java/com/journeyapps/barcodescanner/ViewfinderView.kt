@@ -131,7 +131,7 @@ class ViewfinderView(context: Context) : View(context) {
         val middle = frame.height() / 2 + frame.top
         canvas.drawRect((frame.left + 2).toFloat(), (middle - 1).toFloat(), (frame.right - 1).toFloat(), (middle + 2).toFloat(), paint)
 
-        val scaleX = frame.width() / previewFrame!!.width().toFloat()
+        val scaleX = frame.width() / previewFrame.width().toFloat()
         val scaleY = frame.height() / previewFrame.height().toFloat()
 
         val currentPossible = possibleResultPoints
