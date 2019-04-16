@@ -123,7 +123,7 @@ class CaptureManager(private val activity: Activity, private val barcodeView: Ca
     }
 
     override fun barcodeResult(result: BarcodeResult) {
-        barcodeView.pause()
+        barcodeView.onPause()
         beepManager.playBeepSoundAndVibrate()
 
         Task.foreDelay(DELAY_BEEP) {
@@ -145,7 +145,7 @@ class CaptureManager(private val activity: Activity, private val barcodeView: Ca
         if (Build.VERSION.SDK_INT >= 23) {
             openCameraWithPermission()
         } else {
-            barcodeView.resume()
+            barcodeView.onResume()
         }
         beepManager.updatePrefs()
         inactivityTimer.start()
@@ -156,7 +156,7 @@ class CaptureManager(private val activity: Activity, private val barcodeView: Ca
     @TargetApi(23)
     private fun openCameraWithPermission() {
         if (activity.checkSelfPermission(Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) {
-            barcodeView.resume()
+            barcodeView.onResume()
         } else if (!askedPermission) {
             activity.requestPermissions(arrayOf(Manifest.permission.CAMERA), cameraPermissionReqCode)
             askedPermission = true
@@ -168,7 +168,7 @@ class CaptureManager(private val activity: Activity, private val barcodeView: Ca
     fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         if (requestCode == cameraPermissionReqCode) {
             if (grantResults.isNotEmpty() && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                barcodeView.resume()
+                barcodeView.onResume()
             } else {
                 displayFrameworkBugMessageAndExit()
             }
@@ -177,7 +177,7 @@ class CaptureManager(private val activity: Activity, private val barcodeView: Ca
 
 
     fun onPause() {
-        barcodeView.pause()
+        barcodeView.onPause()
         inactivityTimer.cancel()
         beepManager.close()
     }

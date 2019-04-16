@@ -2,7 +2,6 @@ package com.journeyapps.barcodescanner.camera
 
 import android.content.Context
 import android.os.Handler
-import android.view.SurfaceHolder
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.Util
 import dev.entao.qr.R
@@ -28,10 +27,6 @@ class CameraInstance(context: Context, val readyHandler: Handler?) {
 
     private val previewSize: Size?
         get() = cameraManager.previewSize
-
-    fun setSurfaceHolder(surfaceHolder: SurfaceHolder) {
-        surface = CameraSurface(surfaceHolder)
-    }
 
     fun open() {
         isOpen = true

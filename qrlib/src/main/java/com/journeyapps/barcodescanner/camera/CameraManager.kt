@@ -20,7 +20,6 @@ import android.content.Context
 import android.hardware.Camera
 import android.util.Log
 import android.view.Surface
-import android.view.SurfaceHolder
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.SourceData
 import dev.entao.qr.camera.*
@@ -199,14 +198,6 @@ class CameraManager(private val context: Context) {
         if (camera != null) {
             setParameters()
         }
-    }
-
-    /**
-     * Must be called from camera thread.
-     */
-    @Throws(IOException::class)
-    fun setPreviewDisplay(holder: SurfaceHolder) {
-        setPreviewDisplay(CameraSurface(holder))
     }
 
     @Throws(IOException::class)

@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Parcelable
 import android.util.Log
-import android.view.SurfaceHolder
 import android.view.TextureView
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -160,26 +159,6 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
         }
 
     private var torchOn = false
-
-    private val surfaceCallback = object : SurfaceHolder.Callback {
-
-        override fun surfaceCreated(holder: SurfaceHolder) {
-
-        }
-
-        override fun surfaceDestroyed(holder: SurfaceHolder) {
-            currentSurfaceSize = null
-        }
-
-        override fun surfaceChanged(holder: SurfaceHolder?, format: Int, width: Int, height: Int) {
-            if (holder == null) {
-                Log.e(TAG, "*** WARNING *** surfaceChanged() gave us a null surface!")
-                return
-            }
-            currentSurfaceSize = Size(width, height)
-            startPreviewIfReady()
-        }
-    }
 
     private val stateCallback = Handler.Callback { message ->
         if (message.what == R.id.zxing_prewiew_size_ready) {
