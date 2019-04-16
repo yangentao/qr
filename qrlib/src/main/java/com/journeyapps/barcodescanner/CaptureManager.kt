@@ -86,7 +86,6 @@ class CaptureManager(private val activity: Activity, private val barcodeView: De
             beepManager.playBeepSoundAndVibrate()
 
             Task.foreDelay(DELAY_BEEP) {
-                activity.finish()
                 onResult(result)
             }
         }

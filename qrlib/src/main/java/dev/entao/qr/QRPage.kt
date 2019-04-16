@@ -14,6 +14,7 @@ import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import dev.entao.appbase.ex.ImageStated
 import dev.entao.appbase.ex.sized
 import dev.entao.ui.base.act
+import dev.entao.ui.base.popPage
 import dev.entao.ui.creator.createLinearHorizontal
 import dev.entao.ui.creator.createTextViewC
 import dev.entao.ui.dialogs.showInput
@@ -120,6 +121,7 @@ class QRPage : TitlePage() {
 	fun onScanResult(result: BarcodeResult) {
 		val text = result.text
 		Log.d("ScanResult:", result.text)
+		popPage()
 		onScanText(text)
 	}
 
