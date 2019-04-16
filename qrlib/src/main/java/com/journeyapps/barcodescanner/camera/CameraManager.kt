@@ -26,6 +26,7 @@ import dev.entao.qr.camera.LightManager
 import com.google.zxing.client.android.camera.CameraConfigurationUtils
 import com.journeyapps.barcodescanner.Size
 import com.journeyapps.barcodescanner.SourceData
+import dev.entao.qr.camera.AutoFocusManager
 import dev.entao.qr.camera.ConfigUtil
 import java.io.IOException
 import java.util.*

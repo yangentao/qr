@@ -16,7 +16,7 @@
 
 @file:Suppress("PrivatePropertyName")
 
-package com.journeyapps.barcodescanner.camera
+package dev.entao.qr.camera
 
 import android.hardware.Camera
 import android.os.Handler
@@ -45,13 +45,7 @@ class AutoFocusManager(private val camera: Camera) {
     }
 
     private fun focus() {
-        if (!useAutoFocus) {
-            return
-        }
-        if (stopped) {
-            return
-        }
-        if (focusing) {
+        if ((!useAutoFocus) || stopped || focusing) {
             return
         }
         try {

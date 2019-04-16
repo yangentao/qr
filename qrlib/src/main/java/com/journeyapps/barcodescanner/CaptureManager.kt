@@ -212,7 +212,6 @@ class CaptureManager(private val activity: Activity, private val barcodeView: De
      */
     fun onPause() {
         barcodeView.pause()
-
         inactivityTimer.cancel()
         beepManager.close()
     }
