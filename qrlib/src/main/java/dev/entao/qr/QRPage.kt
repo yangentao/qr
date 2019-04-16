@@ -9,7 +9,7 @@ import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.journeyapps.barcodescanner.BarcodeResult
-import com.journeyapps.barcodescanner.DecoratedBarcodeView
+import dev.entao.qr.camera.DecoratedBarcodeView
 import dev.entao.appbase.ex.ImageStated
 import dev.entao.appbase.ex.sized
 import dev.entao.qr.camera.CaptureManager

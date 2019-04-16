@@ -1,4 +1,4 @@
-package com.journeyapps.barcodescanner
+package dev.entao.qr.camera
 
 import android.content.Context
 import android.graphics.Color
@@ -6,6 +6,10 @@ import android.view.KeyEvent
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.google.zxing.ResultPoint
+import com.journeyapps.barcodescanner.BarcodeCallback
+import com.journeyapps.barcodescanner.BarcodeResult
+import com.journeyapps.barcodescanner.BarcodeView
+import com.journeyapps.barcodescanner.ViewfinderView
 import dev.entao.qr.ScanConfig
 import dev.entao.ui.creator.createTextViewB
 import dev.entao.ui.ext.*
@@ -30,7 +34,6 @@ class DecoratedBarcodeView(context: Context) : FrameLayout(context) {
         viewFinder.setCameraPreview(barcodeView)
         addView(statusView, FParam.Wrap.GravityTopCenter.margins(20))
         setStatusText(ScanConfig.tips)
-        barcodeView.decoderFactory = DefaultDecoderFactory(ScanConfig.decodeSet, null, ScanConfig.charset)
     }
 
 

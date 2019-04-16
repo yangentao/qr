@@ -5,6 +5,7 @@ import android.os.Handler
 import com.google.zxing.DecodeHintType
 import com.google.zxing.ResultPoint
 import dev.entao.qr.R
+import dev.entao.qr.ScanConfig
 import java.util.*
 
 /**
@@ -25,7 +26,7 @@ class BarcodeView(context: Context) : CameraPreview(context) {
     private var decoding = false
     private var callback: BarcodeCallback? = null
     private var decoderThread: DecoderThread? = null
-    var decoderFactory: DecoderFactory = DefaultDecoderFactory()
+    var decoderFactory: DecoderFactory = DefaultDecoderFactory(ScanConfig.decodeSet, null, ScanConfig.charset)
 
 
     private val resultCallback = Handler.Callback { message ->

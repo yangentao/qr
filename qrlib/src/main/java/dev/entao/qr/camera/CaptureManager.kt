@@ -18,7 +18,6 @@ import com.google.zxing.ResultPoint
 import com.journeyapps.barcodescanner.BarcodeCallback
 import com.journeyapps.barcodescanner.BarcodeResult
 import com.journeyapps.barcodescanner.CameraPreview
-import com.journeyapps.barcodescanner.DecoratedBarcodeView
 import dev.entao.qr.R
 import dev.entao.qr.ScanConfig
 import dev.entao.util.Task
