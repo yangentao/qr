@@ -6,11 +6,12 @@ import android.os.HandlerThread
 class TaskHandler(val name: String) {
 
     val thread = HandlerThread(name)
-    val handler = Handler(thread.looper)
+    val handler: Handler
 
 
     init {
         thread.start()
+        handler = Handler(thread.looper)
     }
 
     fun quit() {
