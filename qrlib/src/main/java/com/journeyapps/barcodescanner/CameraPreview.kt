@@ -210,20 +210,22 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
     }
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
+        logd("onSurfaceTextureAvailable", width, height)
         onSurfaceTextureSizeChanged(surface, width, height)
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
+        logd("onSurfaceTextureSizeChanged", width, height)
         currentSurfaceSize = Size(width, height)
         startPreviewIfReady()
     }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
+        logd("onSurfaceTextureDestroyed")
         return false
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
-
     }
 
     override fun onAttachedToWindow() {
@@ -394,6 +396,7 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
      * Call from UI thread only.
      */
     fun resume() {
+        logd("CameraPreview.resume()")
         if (cameraInstance != null) {
             Log.w(TAG, "initCamera called twice")
             return
