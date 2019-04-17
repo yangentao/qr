@@ -6,8 +6,8 @@ import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
-import com.journeyapps.barcodescanner.camera.PreviewDataCallback
-import dev.entao.qr.ScanConfig
+import dev.entao.qr.camera.PreviewDataCallback
+import dev.entao.qr.QRConfig
 import dev.entao.qr.TaskHandler
 import dev.entao.qr.camera.BarcodeCallback
 import dev.entao.qr.camera.BarcodeResult
@@ -39,8 +39,8 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
     init {
         val hints = EnumMap<DecodeHintType, Any>(DecodeHintType::class.java)
         hints[DecodeHintType.NEED_RESULT_POINT_CALLBACK] = this
-        hints[DecodeHintType.POSSIBLE_FORMATS] = ScanConfig.decodeSet
-        hints[DecodeHintType.CHARACTER_SET] = ScanConfig.charset
+        hints[DecodeHintType.POSSIBLE_FORMATS] = QRConfig.decodeSet
+        hints[DecodeHintType.CHARACTER_SET] = QRConfig.charset
         val reader = MultiFormatReader()
         reader.setHints(hints)
         decoder = Decoder(reader)

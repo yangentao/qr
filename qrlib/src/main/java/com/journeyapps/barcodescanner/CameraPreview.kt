@@ -16,7 +16,7 @@ import android.view.ViewGroup
 import android.view.WindowManager
 import com.journeyapps.barcodescanner.camera.CameraInstance
 import com.journeyapps.barcodescanner.camera.DisplayConfiguration
-import dev.entao.qr.PreviewConfig
+import dev.entao.qr.QRConfig
 import dev.entao.qr.R
 import dev.entao.qr.camera.RotationCallback
 import dev.entao.qr.camera.RotationListener
@@ -55,7 +55,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     var cameraInstance: CameraInstance? = null
         private set
 
-    private var textureView: TextureView? = null
+    private lateinit var textureView: TextureView
 
     /**
      * The preview typically starts being active a while after calling resume(), and stops
@@ -137,19 +137,6 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
 
 
     private var torchOn = false
-
-    private val stateCallback = Handler.Callback { message ->
-        if (message.what == R.id.zxing_camera_error) {
-            val error = message.obj as Exception
-
-            if (isActive) {
-                // This check prevents multiple errors from begin passed through.
-                pause()
-                fireState.cameraError(error)
-            }
-        }
-        false
-    }
 
 
     private val fireState = object : StateListener {
@@ -238,30 +225,23 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     }
 
     init {
-        setBackgroundColor(Color.BLACK)
-        initializeAttributes()
-    }
-
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-
-        setupSurfaceView()
-    }
-
-    /**
-     * Initialize from XML attributes.
-     *
-     * @param attrs the attributes
-     */
-    fun initializeAttributes() {
-        val framingRectWidth = PreviewConfig.width
-        val framingRectHeight = PreviewConfig.height
+        val framingRectWidth = QRConfig.width
+        val framingRectHeight = QRConfig.height
 
         if (framingRectWidth > 0 && framingRectHeight > 0) {
             this.framingRectSize = Size(framingRectWidth, framingRectHeight)
         }
     }
+
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        setBackgroundColor(Color.BLACK)
+        textureView = TextureView(context)
+        textureView.surfaceTextureListener = surfaceTextureListener()
+        addView(textureView)
+    }
+
 
     private fun rotationChanged() {
         // Confirm that it did actually change
@@ -271,13 +251,6 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
         }
     }
 
-    @SuppressLint("NewAPI")
-    private fun setupSurfaceView() {
-        textureView = TextureView(context)
-        textureView!!.surfaceTextureListener = surfaceTextureListener()
-        addView(textureView)
-
-    }
 
     /**
      * Add a listener to be notified of changes to the preview state, as well as camera errors.
@@ -339,24 +312,18 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     private fun containerSized(containerSize: Size) {
         this.containerSize = containerSize
         val ci = cameraInstance ?: return
-        if (ci.displayConfiguration == null) {
+        if (!ci.configured) {
             displayConfiguration = DisplayConfiguration(displayRotation, containerSize)
-            ci.displayConfiguration = displayConfiguration
-            ci.configureCamera()
+            this.previewSize = ci.configureCamera(displayConfiguration!!)
+            calculateFrames()
+            requestLayout()
+            startPreviewIfReady()
             if (torchOn) {
                 ci.setTorch(torchOn)
             }
         }
     }
 
-    private fun previewSized(size: Size) {
-        this.previewSize = size
-        if (containerSize != null) {
-            calculateFrames()
-            requestLayout()
-            startPreviewIfReady()
-        }
-    }
 
     /**
      * Calculate transformation for the TextureView.
@@ -435,9 +402,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
             Log.w(TAG, "initCamera called twice")
             return
         }
-        cameraInstance = CameraInstance(context) {
-            previewSized(it)
-        }
+        cameraInstance = CameraInstance(context)
         cameraInstance?.open()
 
         // Keep track of the orientation we opened at, so that we don't reopen the camera if we
@@ -520,7 +485,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     protected fun calculateFramingRect(container: Rect, surface: Rect?): Rect {
         // intersection is the part of the container that is used for the preview
         val intersection = Rect(container)
-        intersection.intersect(surface)
+        val okk = intersection.intersect(surface)
 
         if (framingRectSize != null) {
             // Specific size is specified. Make sure it's not larger than the container or surface.

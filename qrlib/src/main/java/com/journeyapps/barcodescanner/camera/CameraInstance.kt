@@ -7,13 +7,10 @@ import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.util.Log
 import android.view.Surface
-import dev.entao.qr.camera.Size
 import com.journeyapps.barcodescanner.SourceData
 import dev.entao.appbase.App.context
-import dev.entao.qr.camera.AutoFocusManager
-import dev.entao.qr.camera.CameraSettings
-import dev.entao.qr.camera.ConfigUtil
-import dev.entao.qr.camera.LightManager
+import dev.entao.qr.QRConfig
+import dev.entao.qr.camera.*
 import java.util.*
 
 
@@ -29,7 +26,7 @@ import java.util.*
  * 6. stopPreview()
  * 7. close()
  */
-class CameraInstance(context: Context, val onReady: (Size) -> Unit) : Camera.PreviewCallback {
+class CameraInstance(context: Context ) : Camera.PreviewCallback {
 
 
     private var camera: Camera? = null
@@ -44,7 +41,9 @@ class CameraInstance(context: Context, val onReady: (Size) -> Unit) : Camera.Pre
     private var previewing: Boolean = false
 
 
-    var displayConfiguration: DisplayConfiguration? = null
+    private var displayConfiguration: DisplayConfiguration? = null
+
+    val configured: Boolean get() = displayConfiguration != null
 
     // Actual chosen preview size
     private var requestedPreviewSize: Size? = null
@@ -122,7 +121,8 @@ class CameraInstance(context: Context, val onReady: (Size) -> Unit) : Camera.Pre
         }
     }
 
-    fun configureCamera() {
+    fun configureCamera(cfg: DisplayConfiguration) :Size {
+        this.displayConfiguration = cfg
         try {
             this.cameraRotation = calculateDisplayRotation()
             setCameraDisplayOrientation(cameraRotation)
@@ -147,7 +147,7 @@ class CameraInstance(context: Context, val onReady: (Size) -> Unit) : Camera.Pre
         }
         this.resolution = naturalPreviewSize
 
-        onReady(previewSize!!)
+        return previewSize!!
     }
 
     fun startPreview(texure: SurfaceTexture) {
@@ -157,7 +157,7 @@ class CameraInstance(context: Context, val onReady: (Size) -> Unit) : Camera.Pre
             theCamera.startPreview()
             previewing = true
             focusManager = AutoFocusManager(theCamera)
-            if (CameraSettings.isAutoTorchEnabled) {
+            if (QRConfig.isAutoTorchEnabled) {
                 lightManager = LightManager(context, this)
                 lightManager?.start()
             }
@@ -173,7 +173,7 @@ class CameraInstance(context: Context, val onReady: (Size) -> Unit) : Camera.Pre
 
             val parameters = ca.parameters
             ConfigUtil.setTorch(parameters, on)
-            if (CameraSettings.isExposureEnabled) {
+            if (QRConfig.isExposureEnabled) {
                 ConfigUtil.setBestExposure(parameters, on)
             }
             ca.parameters = parameters

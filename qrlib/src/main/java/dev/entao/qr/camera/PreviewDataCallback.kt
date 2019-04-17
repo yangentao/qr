@@ -1,4 +1,4 @@
-package com.journeyapps.barcodescanner.camera
+package dev.entao.qr.camera
 
 import com.journeyapps.barcodescanner.SourceData
 

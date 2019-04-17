@@ -16,8 +16,8 @@ import android.view.Surface
 import android.view.WindowManager
 import com.google.zxing.ResultPoint
 import com.journeyapps.barcodescanner.CameraPreview
+import dev.entao.qr.QRConfig
 import dev.entao.qr.R
-import dev.entao.qr.ScanConfig
 import dev.entao.util.Task
 
 /**
@@ -62,12 +62,12 @@ class CaptureManager(private val activity: Activity, private val barcodeView: Ca
         activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         barcodeView.barcodeView.addStateListener(this)
         lockOrientation()
-        beepManager.isBeepEnabled = ScanConfig.beep
+        beepManager.isBeepEnabled = QRConfig.beep
         beepManager.updatePrefs()
-        if (ScanConfig.timeout > 0) {
+        if (QRConfig.timeout > 0) {
             handler.postDelayed({
                 finish()
-            }, ScanConfig.timeout.toLong())
+            }, QRConfig.timeout.toLong())
         }
     }
 

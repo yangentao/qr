@@ -8,10 +8,10 @@ import android.util.Log
 import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.TextView
-import dev.entao.qr.camera.BarcodeResult
-import dev.entao.qr.camera.CameraView
 import dev.entao.appbase.ex.ImageStated
 import dev.entao.appbase.ex.sized
+import dev.entao.qr.camera.BarcodeResult
+import dev.entao.qr.camera.CameraView
 import dev.entao.qr.camera.CaptureManager
 import dev.entao.ui.base.act
 import dev.entao.ui.base.popPage
@@ -59,7 +59,7 @@ class QRPage : TitlePage() {
         contentView.addViewParam(ll) {
             widthFill().heightWrap()
         }
-        if (ScanConfig.enableManualInput) {
+        if (QRConfig.enableManualInput) {
             val tv = makeButton(R.mipmap.qr_round, R.mipmap.qr_round2)
             tv.text = "手动输入"
             ll.addView(tv) {
@@ -71,7 +71,7 @@ class QRPage : TitlePage() {
             }
 
         }
-        if (ScanConfig.enableLight) {
+        if (QRConfig.enableLight) {
             val tv = makeButton(R.mipmap.light, R.mipmap.light2)
             tv.text = "开灯"
             ll.addViewParam(tv) {

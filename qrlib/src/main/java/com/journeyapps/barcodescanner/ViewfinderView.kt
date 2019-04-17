@@ -25,7 +25,7 @@ import android.graphics.Rect
 import android.view.View
 import com.google.zxing.ResultPoint
 import dev.entao.appbase.App
-import dev.entao.qr.ZColor
+import dev.entao.qr.QRConfig
 import java.util.*
 
 
@@ -38,9 +38,9 @@ import java.util.*
 class ViewfinderView(context: Context) : View(context) {
 
     private val paint: Paint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val maskColor: Int = ZColor.viewfinder_mask
-    private val laserColor: Int = ZColor.viewfinder_laser
-    private val resultPointColor: Int = ZColor.possible_result_points
+    private val maskColor: Int = QRConfig.viewfinderMask
+    private val laserColor: Int = QRConfig.viewfinderLaser
+    private val resultPointColor: Int = QRConfig.possibleResultPoints
     private var scannerAlpha: Int = 0
     private var possibleResultPoints = ArrayList<ResultPoint>()
     private var lastPossibleResultPoints: List<ResultPoint>? = null

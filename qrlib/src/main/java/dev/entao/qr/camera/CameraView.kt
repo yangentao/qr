@@ -8,7 +8,7 @@ import android.widget.TextView
 import com.google.zxing.ResultPoint
 import com.journeyapps.barcodescanner.BarcodeView
 import com.journeyapps.barcodescanner.ViewfinderView
-import dev.entao.qr.ScanConfig
+import dev.entao.qr.QRConfig
 import dev.entao.ui.creator.createTextViewB
 import dev.entao.ui.ext.*
 
@@ -27,11 +27,10 @@ class CameraView(context: Context) : FrameLayout(context) {
     init {
         genId()
         addView(barcodeView, FParam.fill())
-        barcodeView.initializeAttributes()
         addView(viewFinder, FParam.fill())
         viewFinder.setPreview(barcodeView)
         addView(statusView, FParam.Wrap.GravityTopCenter.margins(20))
-        setStatusText(ScanConfig.tips)
+        setStatusText(QRConfig.tips)
     }
 
 
