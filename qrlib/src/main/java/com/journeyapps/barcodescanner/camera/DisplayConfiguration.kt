@@ -7,7 +7,7 @@ import dev.entao.qr.camera.Size
 /**
  *
  */
-class DisplayConfiguration(val rotation: Int, val viewfinderSize: Size) {
+class DisplayConfiguration(val rotation: Int, val containerSize: Size) {
     var previewScalingStrategy: PreviewScalingStrategy = CenterCropStrategy() //FitCenterStrategy()
 
     /**
@@ -30,9 +30,9 @@ class DisplayConfiguration(val rotation: Int, val viewfinderSize: Size) {
      */
     fun getBestPreviewSize(sizes: List<Size>, isRotated: Boolean): Size {
         val desired = if (isRotated) {
-            viewfinderSize.rotate()
+            containerSize.rotate()
         } else {
-            viewfinderSize
+            containerSize
         }
         return previewScalingStrategy.getBestPreviewSize(sizes, desired)
     }
@@ -46,7 +46,7 @@ class DisplayConfiguration(val rotation: Int, val viewfinderSize: Size) {
      * @return a rect placing the preview
      */
     fun scalePreview(previewSize: Size): Rect {
-        return previewScalingStrategy.scalePreview(previewSize, viewfinderSize)
+        return previewScalingStrategy.scalePreview(previewSize, containerSize)
     }
 
 }

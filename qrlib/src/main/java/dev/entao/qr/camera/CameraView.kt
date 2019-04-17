@@ -40,12 +40,10 @@ class CameraView(context: Context) : FrameLayout(context) {
 
 
     fun onPause() {
-        barcodeView.pause()
     }
 
 
     fun onResume() {
-        barcodeView.resume()
     }
 
 

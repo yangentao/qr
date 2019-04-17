@@ -6,8 +6,6 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.SurfaceTexture
-import android.os.Bundle
-import android.os.Parcelable
 import android.util.Log
 import android.view.TextureView
 import android.view.WindowManager
@@ -18,7 +16,6 @@ import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
 import com.journeyapps.barcodescanner.camera.CameraInstance
 import com.journeyapps.barcodescanner.camera.DisplayConfiguration
-import dev.entao.log.logd
 import dev.entao.qr.QRConfig
 import dev.entao.qr.TaskHandler
 import dev.entao.qr.camera.*
@@ -70,7 +67,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
         private set
 
     private var rotationListener: RotationListener = RotationListener(context)
-    private var openedOrientation = -1
 
     private val stateListeners = ArrayList<StateListener>()
 
@@ -79,16 +75,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
     private var surfaceRect: Rect? = null
 
 
-    // Framing rectangle relative to this view
-    /**
-     * The framing rectangle, relative to this view. Use to draw the rectangle.
-     *
-     *
-     * Will never be null while the preview is active.
-     *
-     * @return the framing rect, or null
-     * @see .isPreviewActive
-     */
     var framingRect: Rect? = null
         private set
 
@@ -195,26 +181,51 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
-        logd("onSurfaceTextureAvailable", width, height)
-        cameraInstance = CameraInstance(context, this.textureView, surface, Size(width, height))
-        onSurfaceTextureSizeChanged(surface, width, height)
+        startCamera(surface, width, height)
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
-        logd("onSurfaceTextureSizeChanged", width, height)
-        cameraInstance?.changeSize(Size(width, height))
-        containerSized(Size(width, height))
-        startPreviewIfReady()
+        resizeCamera(surface, width, height)
     }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
-        logd("onSurfaceTextureDestroyed")
-        cameraInstance?.close()
-        cameraInstance = null
-        return false
+        stopCamera()
+        return true
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
+    }
+
+    private fun startCamera(surface: SurfaceTexture, width: Int, height: Int) {
+        cameraInstance = CameraInstance(context, this.textureView, surface, Size(width, height))
+        containerSized(Size(width, height))
+
+        rotationListener.listen(object : RotationCallback {
+            override fun onRotationChanged(rotation: Int) {
+                Task.foreDelay(250.toLong()) {
+                    if (isActive) {
+                        stopCamera()
+                        if (this@CameraPreview.textureView.isAvailable) {
+                            startCamera(textureView.surfaceTexture, textureView.width, textureView.height)
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    private fun stopCamera() {
+        stopDecoderThread()
+        cameraInstance?.close()
+        cameraInstance = null
+        isPreviewActive = false
+        this.previewFramingRect = null
+        rotationListener.stop()
+        fireState.previewStopped()
+    }
+
+    private fun resizeCamera(surface: SurfaceTexture, width: Int, height: Int) {
+        containerSized(Size(width, height))
     }
 
 
@@ -279,15 +290,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
     }
 
 
-    private fun rotationChanged() {
-        // Confirm that it did actually change
-        if (isActive && displayRotation != openedOrientation) {
-            pause()
-            resume()
-        }
-    }
-
-
     /**
      * Add a listener to be notified of changes to the preview state, as well as camera errors.
      *
@@ -304,13 +306,9 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
         val previewWidth = preSize.width
         val previewHeight = preSize.height
 
-        val width = camInst.surfaceSize.width
-        val height = camInst.surfaceSize.height
-
         surfaceRect = dc.scalePreview(preSize)
 
-        val container = Rect(0, 0, width, height)
-        framingRect = calculateFramingRect(container, surfaceRect)
+        framingRect = calculateFramingRect(Rect(0, 0, camInst.surfaceSize.width, camInst.surfaceSize.height))
         val frameInPreview = Rect(framingRect)
         frameInPreview.offset(-surfaceRect!!.left, -surfaceRect!!.top)
 
@@ -333,9 +331,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
     private fun containerSized(containerSize: Size) {
         val ci = cameraInstance ?: return
-        if (ci.configured) {
-            return
-        }
         val dc = DisplayConfiguration(displayRotation, containerSize)
         ci.configureCamera(dc)
         calculateFrames(dc)
@@ -364,110 +359,29 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
     }
 
 
-    /**
-     * Start the camera preview and decoding. Typically this should be called from the Activity's
-     * onResume() method.
-     *
-     *
-     * Call from UI thread only.
-     */
-    fun resume() {
-        logd("CameraPreview.resume()")
-        if (cameraInstance == null) {
-            Log.w(TAG, "initCamera called twice")
-            return
-        }
-
-
-        // Keep track of the orientation we opened at, so that we don't reopen the camera if we
-        // don't need to.
-        openedOrientation = displayRotation
-
-        // The activity was paused but not stopped, so the surface still exists. Therefore
-        // surfaceCreated() won't be called, so init the camera here.
-        startPreviewIfReady()
-
-        rotationListener.listen(object : RotationCallback {
-            override fun onRotationChanged(rotation: Int) {
-                Task.foreDelay(ROTATION_LISTENER_DELAY_MS.toLong()) {
-                    rotationChanged()
-                }
-            }
-        })
-    }
-
-    fun pause() {
-        stopDecoderThread()
-        openedOrientation = -1
-        cameraInstance?.close()
-        cameraInstance = null
-        isPreviewActive = false
-        this.previewFramingRect = null
-        rotationListener.stop()
-
-        fireState.previewStopped()
-    }
-
-
-    /**
-     * Calculate framing rectangle, relative to the preview frame.
-     *
-     *
-     * Note that the SurfaceView may be larger than the container.
-     *
-     *
-     * Override this for more control over the framing rect calculations.
-     *
-     * @param container this container, with left = top = 0
-     * @param surface   the SurfaceView, relative to this container
-     * @return the framing rect, relative to this container
-     */
-    private fun calculateFramingRect(container: Rect, surface: Rect?): Rect {
-        // intersection is the part of the container that is used for the preview
-        val intersection = Rect(container)
-        val okk = intersection.intersect(surface)
+    private fun calculateFramingRect(container: Rect): Rect {
+        val rect = Rect(container)
 
         val rw = QRConfig.width
         val rh = QRConfig.height
         if (rw > 0 && rh > 0) {
-            val horizontalMargin = Math.max(0, (intersection.width() - rw) / 2)
-            val verticalMargin = Math.max(0, (intersection.height() - rh) / 2)
-            intersection.inset(horizontalMargin, verticalMargin)
-            return intersection
+            val horizontalMargin = Math.max(0, (rect.width() - rw) / 2)
+            val verticalMargin = Math.max(0, (rect.height() - rh) / 2)
+            rect.inset(horizontalMargin, verticalMargin)
+            return rect
         }
         val minEdge = Math.min(container.width(), container.height())
         val fEdge: Int = (QRConfig.percentEdge * minEdge).toInt()
-        val horizontalMargin = Math.max(0, (intersection.width() - fEdge) / 2)
-        val verticalMargin = Math.max(0, (intersection.height() - fEdge) / 2)
-        intersection.inset(horizontalMargin, verticalMargin)
-        return intersection
+        val horizontalMargin = Math.max(0, (rect.width() - fEdge) / 2)
+        val verticalMargin = Math.max(0, (rect.height() - fEdge) / 2)
+        rect.inset(horizontalMargin, verticalMargin)
+        return rect
 
-    }
-
-    override fun onSaveInstanceState(): Parcelable? {
-        val superState = super.onSaveInstanceState()
-        val myState = Bundle()
-        myState.putParcelable("super", superState)
-        return myState
-    }
-
-    override fun onRestoreInstanceState(state: Parcelable) {
-        if (state !is Bundle) {
-            super.onRestoreInstanceState(state)
-            return
-        }
-        val superState = state.getParcelable<Parcelable>("super")
-        super.onRestoreInstanceState(superState)
-        val torch = state.getBoolean("torch")
-        setTorch(torch)
     }
 
     companion object {
 
         private val TAG = CameraPreview::class.java.simpleName
 
-        // Delay after rotation change is detected before we reorientate ourselves.
-        // This is to avoid double-reinitialization when the Activity is destroyed and recreated.
-        private const val ROTATION_LISTENER_DELAY_MS = 250
     }
 }

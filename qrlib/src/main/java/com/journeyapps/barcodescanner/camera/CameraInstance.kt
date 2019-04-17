@@ -43,9 +43,6 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
     private var previewing: Boolean = false
 
 
-    var configured: Boolean = false
-        private set
-
     private var cameraRotation = -1
     var previewSize: Size = Size(0, 0)
         private set
@@ -94,13 +91,8 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
         }
     }
 
-    fun changeSize(size: Size) {
-        //TODO changeSize
-    }
-
 
     fun configureCamera(cfg: DisplayConfiguration) {
-        configured = true
         var isCameraRotated = false
         try {
             val degrees = when (cfg.rotation) {
@@ -154,6 +146,7 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
         val mx = this.calculateTextureTransform(surfaceSize, previewSize)
         this.textureView.setTransform(mx)
     }
+
     private fun calculateTextureTransform(textureSize: Size, previewSize: Size): Matrix {
         val ratioTexture = textureSize.width.toFloat() / textureSize.height.toFloat()
         val ratioPreview = previewSize.width.toFloat() / previewSize.height.toFloat()
@@ -224,7 +217,6 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
 
     fun close() {
         if (isOpen) {
-            configured = false
             focusManager?.stop()
             focusManager = null
             if (previewing) {

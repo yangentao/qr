@@ -4,6 +4,7 @@ import android.content.Context
 import android.widget.LinearLayout
 import dev.entao.log.logd
 import dev.entao.qr.QRPage
+import dev.entao.ui.base.openActivity
 import dev.entao.ui.base.pushPage
 import dev.entao.ui.creator.textView
 import dev.entao.ui.ext.*
@@ -21,6 +22,9 @@ class MainPage : TitlePage() {
                     logd("Scan: $it ")
                 }
                 pushPage(p)
+            }
+            rightText("Open").onClick = {
+                openActivity(TestActivity::class)
             }
         }
 
