@@ -6,8 +6,6 @@ import android.view.KeyEvent
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.google.zxing.ResultPoint
-import com.journeyapps.barcodescanner.CameraPreview
-import com.journeyapps.barcodescanner.ViewfinderView
 import dev.entao.qr.QRConfig
 import dev.entao.ui.creator.createTextViewB
 import dev.entao.ui.ext.*

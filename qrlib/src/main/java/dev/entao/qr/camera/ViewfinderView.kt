@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.journeyapps.barcodescanner
+package dev.entao.qr.camera
 
 import android.annotation.SuppressLint
 import android.content.Context

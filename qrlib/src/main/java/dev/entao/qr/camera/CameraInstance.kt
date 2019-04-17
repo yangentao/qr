@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION", "MemberVisibilityCanBePrivate")
 
-package com.journeyapps.barcodescanner.camera
+package dev.entao.qr.camera
 
 import android.content.Context
 import android.graphics.Matrix
@@ -12,10 +12,6 @@ import android.view.WindowManager
 import com.journeyapps.barcodescanner.SourceData
 import dev.entao.appbase.App.context
 import dev.entao.qr.QRConfig
-import dev.entao.qr.camera.AutoFocusManager
-import dev.entao.qr.camera.ConfigUtil
-import dev.entao.qr.camera.PreviewDataCallback
-import dev.entao.qr.camera.Size
 
 
 /**
@@ -41,8 +37,8 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
 
     private var focusManager: AutoFocusManager? = null
 
-    private var previewing: Boolean = false
-
+    var previewing: Boolean = false
+        private set
 
     private var cameraRotation = -1
 
@@ -51,7 +47,7 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
 
     private var resolution: Size = Size(0, 0)
 
-    private var callback: PreviewDataCallback? = null
+    var previewCallback: PreviewDataCallback? = null
 
     val isTorchOn: Boolean
         get() {
@@ -184,7 +180,7 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
 
     override fun onPreviewFrame(data: ByteArray, camera: Camera) {
         val sz = resolution ?: return
-        val cb = this.callback ?: return
+        val cb = this.previewCallback ?: return
         val format = camera.parameters.previewFormat
         val source = SourceData(data, sz.width, sz.height, format, cameraRotation)
         cb.onPreview(source)
@@ -198,7 +194,15 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
             previewing = true
             focusManager = AutoFocusManager(theCamera)
         }
+    }
 
+    fun stopPreview() {
+        if (previewing) {
+            previewing = false
+            camera?.stopPreview()
+            focusManager?.stop()
+            focusManager = null
+        }
     }
 
     fun setTorch(on: Boolean) {
@@ -223,7 +227,7 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
             focusManager = null
             if (previewing) {
                 camera?.stopPreview()
-                this.callback = null
+                this.previewCallback = null
                 previewing = false
             }
             camera?.release()
@@ -231,11 +235,9 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
         }
     }
 
-    fun requestPreview(callback: PreviewDataCallback) {
-        val theCamera = camera ?: return
+    fun requestPreview() {
         if (previewing) {
-            this.callback = callback
-            theCamera.setOneShotPreviewCallback(this)
+            camera?.setOneShotPreviewCallback(this)
         }
     }
 

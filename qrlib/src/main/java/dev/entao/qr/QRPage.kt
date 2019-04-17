@@ -16,7 +16,6 @@ import dev.entao.qr.camera.CameraView
 import dev.entao.qr.camera.CaptureManager
 import dev.entao.ui.base.act
 import dev.entao.ui.base.popPage
-import dev.entao.ui.base.pushPage
 import dev.entao.ui.creator.createLinearHorizontal
 import dev.entao.ui.creator.createTextViewC
 import dev.entao.ui.dialogs.showInput
@@ -44,9 +43,6 @@ class QRPage : TitlePage() {
 
     override fun onCreateContent(context: Context, contentView: LinearLayout) {
         titleBar.title(title)
-        titleBar.rightText("Hello").onClick = {
-            pushPage(HelloPage())
-        }
 
         barcodeScannerView = CameraView(context)
         contentView.addView(barcodeScannerView) {

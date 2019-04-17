@@ -1,6 +1,6 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 
-package com.journeyapps.barcodescanner
+package dev.entao.qr.camera
 
 import android.content.Context
 import android.graphics.Color
@@ -12,11 +12,10 @@ import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
-import com.journeyapps.barcodescanner.camera.CameraInstance
+import com.journeyapps.barcodescanner.SourceData
 import dev.entao.log.logd
 import dev.entao.qr.QRConfig
 import dev.entao.qr.TaskHandler
-import dev.entao.qr.camera.*
 import dev.entao.ui.ext.FParam
 import dev.entao.ui.ext.Fill
 import dev.entao.util.Task
@@ -55,19 +54,9 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
     private var textureView: TextureView
 
-    /**
-     * The preview typically starts being active a while after calling resume(), and stops
-     * when calling pause().
-     *
-     * @return true if the preview is active
-     */
-    var isPreviewActive = false
-        private set
-
     private var rotationListener: RotationListener = RotationListener(context)
 
     private val stateListeners = ArrayList<StateListener>()
-
 
 
     var framingRect: Rect? = null
@@ -88,7 +77,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
 
     private var callback: BarcodeCallback? = null
-    private val decoding: Boolean get() = callback != null
 
     private var taskHandler: TaskHandler? = null
     private var cropRect: Rect? = null
@@ -190,6 +178,7 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
     private fun startCamera(surface: SurfaceTexture, width: Int, height: Int) {
         cameraInstance = CameraInstance(context, this.textureView, surface, Size(width, height))
+        cameraInstance?.previewCallback = this
         containerSized(Size(width, height))
 
         rotationListener.listen(object : RotationCallback {
@@ -210,7 +199,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
         stopDecoderThread()
         cameraInstance?.close()
         cameraInstance = null
-        isPreviewActive = false
         this.previewFramingRect = null
         rotationListener.stop()
         fireState.previewStopped()
@@ -221,11 +209,18 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
     }
 
     private fun containerSized(containerSize: Size) {
-        val ci = cameraInstance ?: return
-        ci.configureCamera()
+        val camInst = this.cameraInstance ?: return
+        camInst.configureCamera()
         calculateFrames(containerSize)
-
-        startPreviewIfReady()
+        if (camInst.previewing) {
+            camInst.stopPreview()
+        }
+        camInst.startPreview()
+        stopDecoderThread() // To be safe
+        cropRect = previewFramingRect
+        taskHandler = TaskHandler("decoder")
+        requestNextPreview()
+        fireState.previewStarted()
     }
 
     override fun foundPossibleResultPoint(point: ResultPoint) {
@@ -234,24 +229,8 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
     fun decodeSingle(callback: BarcodeCallback) {
         this.callback = callback
-        startDecoderThread()
     }
 
-
-    fun stopDecoding() {
-        this.callback = null
-        stopDecoderThread()
-    }
-
-
-    private fun startDecoderThread() {
-        stopDecoderThread() // To be safe
-        if (this.decoding && isPreviewActive) {
-            cropRect = previewFramingRect
-            taskHandler = TaskHandler("decoder")
-            requestNextPreview()
-        }
-    }
 
     private fun stopDecoderThread() {
         taskHandler?.quit()
@@ -265,11 +244,12 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
     }
 
     private fun requestNextPreview() {
-        cameraInstance?.requestPreview(this)
+        cameraInstance?.requestPreview()
     }
 
 
     private fun decode(sourceData: SourceData) {
+        val cb = this.callback ?: return
         val rect = this.cropRect ?: return requestNextPreview()
 
         sourceData.cropRect = rect
@@ -277,8 +257,9 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
         val rawResult = decoder.decode(source)
         if (rawResult != null) {
             val r = BarcodeResult(rawResult)
-            callback?.barcodeResult(r)
-            stopDecoding()
+            cb.barcodeResult(r)
+            this.callback = null
+            stopDecoderThread()
             return
         }
         val ps = decoder.possibleResultPoints
@@ -336,17 +317,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
     fun setTorch(on: Boolean) {
         cameraInstance?.setTorch(on)
-    }
-
-
-    private fun startPreviewIfReady() {
-        val camInst = this.cameraInstance ?: return
-        if (!isPreviewActive) {
-            camInst.startPreview()
-            isPreviewActive = true
-            startDecoderThread()
-            fireState.previewStarted()
-        }
     }
 
 
