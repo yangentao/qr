@@ -41,9 +41,8 @@ class CameraInstance(context: Context) : Camera.PreviewCallback {
     private var previewing: Boolean = false
 
 
-    private var displayConfiguration: DisplayConfiguration? = null
-
-    val configured: Boolean get() = displayConfiguration != null
+    var configured: Boolean = false
+        private set
 
     /**
      * @return the camera rotation relative to display rotation, in degrees. Typically 0 if the
@@ -85,7 +84,7 @@ class CameraInstance(context: Context) : Camera.PreviewCallback {
 
 
     fun configureCamera(cfg: DisplayConfiguration): Size? {
-        this.displayConfiguration = cfg
+        configured = true
         var isCameraRotated = false
         try {
             val degrees = when (cfg.rotation) {
@@ -180,6 +179,7 @@ class CameraInstance(context: Context) : Camera.PreviewCallback {
 
     fun close() {
         if (isOpen) {
+            configured = false
             focusManager?.stop()
             focusManager = null
             if (previewing) {
