@@ -1,4 +1,4 @@
-@file:Suppress("DEPRECATION", "MemberVisibilityCanBePrivate")
+@file:Suppress("DEPRECATION", "MemberVisibilityCanBePrivate", "UNUSED_PARAMETER")
 
 package dev.entao.qr.camera
 
@@ -178,7 +178,7 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
     }
 
     override fun onPreviewFrame(data: ByteArray, camera: Camera) {
-        val sz = resolution ?: return
+        val sz = resolution
         val cb = this.previewCallback ?: return
         val format = camera.parameters.previewFormat
         val source = SourceData(data, sz.width, sz.height, format, cameraRotation)

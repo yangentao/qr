@@ -203,6 +203,7 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
         fireState.previewStopped()
     }
 
+    @Suppress("UNUSED_PARAMETER")
     private fun resizeCamera(surface: SurfaceTexture, width: Int, height: Int) {
         containerSized(Size(width, height))
     }

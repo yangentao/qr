@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@file:Suppress("PrivatePropertyName")
+@file:Suppress("PrivatePropertyName", "DEPRECATION")
 
 package dev.entao.qr.camera
 

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-@file:Suppress("PrivatePropertyName")
+@file:Suppress("PrivatePropertyName", "DEPRECATION")
 
 package dev.entao.qr.camera
 
@@ -58,7 +58,7 @@ class AutoFocusManager(private val camera: Camera) {
         }
     }
 
-    private val autoFocusCallback = Camera.AutoFocusCallback { ok, _ ->
+    private val autoFocusCallback = Camera.AutoFocusCallback { _, _ ->
         focusing = false
         handler.postDelayed({
             focus()
