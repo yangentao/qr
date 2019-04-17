@@ -21,13 +21,25 @@ object QRConfig {
     var enableFromImageFile: Boolean = true
 
 
-    var width = 240.dp  //-1;
-    var height = 240.dp //-1;
-
     var possibleResultPoints = 0XC0FFBD21L.color
     var viewfinderLaser = 0XFFCC0000L.color
     var viewfinderMask = 0x60000000L.color
 
     var isExposureEnabled = false
+
+
+    //中间方框的高宽
+    var width = 240.dp  //-1;
+    var height = 240.dp //-1;
+
+    //中间方框占屏幕(控件大小)的比例, 当width或height是0时有效
+    var percentEdge: Double = 0.6
+        set(value) {
+            field = when {
+                value < 0.1 -> 0.1
+                value > 1.0 -> 1.0
+                else -> value
+            }
+        }
 
 }

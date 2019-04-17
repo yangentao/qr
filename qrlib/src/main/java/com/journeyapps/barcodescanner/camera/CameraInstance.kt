@@ -3,6 +3,7 @@
 package com.journeyapps.barcodescanner.camera
 
 import android.content.Context
+import android.graphics.Matrix
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.view.Surface
@@ -45,12 +46,9 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
     var configured: Boolean = false
         private set
 
-    /**
-     * @return the camera rotation relative to display rotation, in degrees. Typically 0 if the
-     * display is in landscape orientation.
-     */
     private var cameraRotation = -1
-
+    var previewSize: Size = Size(0, 0)
+        private set
 
     val isTorchOn: Boolean
         get() {
@@ -73,22 +71,35 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
                 break
             }
         }
+        val cam = this.camera
+        if (cam != null) {
+            val paramList = cam.parameters
+            ConfigUtil.setFocus(paramList)
+            ConfigUtil.setBarcodeSceneMode(paramList)
+            ConfigUtil.setTorch(paramList, false)
+            try {
+                cam.parameters = paramList
+            } catch (e: Exception) {
+
+            }
+            try {
+                val pEx = cam.parameters
+                ConfigUtil.setVideoStabilization(pEx)
+                ConfigUtil.setFocusArea(pEx)
+                ConfigUtil.setMetering(pEx)
+                cam.parameters = pEx
+            } catch (ex: Exception) {
+
+            }
+        }
     }
 
     fun changeSize(size: Size) {
         //TODO changeSize
     }
 
-    override fun onPreviewFrame(data: ByteArray, camera: Camera) {
-        val sz = resolution ?: return
-        val cb = this.callback ?: return
-        val format = camera.parameters.previewFormat
-        val source = SourceData(data, sz.width, sz.height, format, cameraRotation)
-        cb.onPreview(source)
-    }
 
-
-    fun configureCamera(cfg: DisplayConfiguration): Size? {
+    fun configureCamera(cfg: DisplayConfiguration) {
         configured = true
         var isCameraRotated = false
         try {
@@ -113,10 +124,6 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
 
 
         val paramList = camera!!.parameters
-        ConfigUtil.setFocus(paramList)
-        ConfigUtil.setBarcodeSceneMode(paramList)
-        ConfigUtil.setTorch(paramList, false)
-
         val supportedSizes = paramList.supportedPreviewSizes //This method will always return a list with at least one element
         val sizeList = ArrayList<Size>()
         for (size in supportedSizes) {
@@ -129,15 +136,6 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
         } catch (e: Exception) {
 
         }
-        try {
-            val pEx = camera!!.parameters
-            ConfigUtil.setVideoStabilization(pEx)
-            ConfigUtil.setFocusArea(pEx)
-            ConfigUtil.setMetering(pEx)
-            camera?.parameters = pEx
-        } catch (ex: Exception) {
-
-        }
 
         val realPreviewSize = camera!!.parameters.previewSize
         val naturalPreviewSize = if (realPreviewSize == null) {
@@ -147,12 +145,54 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
         }
         this.resolution = naturalPreviewSize
 
-
-        return if (isCameraRotated) {
+        this.previewSize = if (isCameraRotated) {
             naturalPreviewSize.rotate()
         } else {
             naturalPreviewSize
         }
+
+        val mx = this.calculateTextureTransform(surfaceSize, previewSize)
+        this.textureView.setTransform(mx)
+    }
+    private fun calculateTextureTransform(textureSize: Size, previewSize: Size): Matrix {
+        val ratioTexture = textureSize.width.toFloat() / textureSize.height.toFloat()
+        val ratioPreview = previewSize.width.toFloat() / previewSize.height.toFloat()
+
+        val scaleX: Float
+        val scaleY: Float
+
+        // We scale so that either width or height fits exactly in the TextureView, and the other
+        // is bigger (cropped).
+        if (ratioTexture < ratioPreview) {
+            scaleX = ratioPreview / ratioTexture
+            scaleY = 1f
+        } else {
+            scaleX = 1f
+            scaleY = ratioTexture / ratioPreview
+        }
+
+        val matrix = Matrix()
+
+        matrix.setScale(scaleX, scaleY)
+
+        // Center the preview
+        val scaledWidth = textureSize.width * scaleX
+        val scaledHeight = textureSize.height * scaleY
+        val dx = (textureSize.width - scaledWidth) / 2
+        val dy = (textureSize.height - scaledHeight) / 2
+
+        // Perform the translation on the scaled preview
+        matrix.postTranslate(dx, dy)
+
+        return matrix
+    }
+
+    override fun onPreviewFrame(data: ByteArray, camera: Camera) {
+        val sz = resolution ?: return
+        val cb = this.callback ?: return
+        val format = camera.parameters.previewFormat
+        val source = SourceData(data, sz.width, sz.height, format, cameraRotation)
+        cb.onPreview(source)
     }
 
     fun startPreview() {
