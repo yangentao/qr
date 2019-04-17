@@ -6,12 +6,13 @@ import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
-import dev.entao.qr.camera.PreviewDataCallback
+import dev.entao.log.logd
 import dev.entao.qr.QRConfig
 import dev.entao.qr.TaskHandler
 import dev.entao.qr.camera.BarcodeCallback
 import dev.entao.qr.camera.BarcodeResult
 import dev.entao.qr.camera.Decoder
+import dev.entao.qr.camera.PreviewDataCallback
 import java.util.*
 
 /**
@@ -65,7 +66,9 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
 
     private fun startDecoderThread() {
         stopDecoderThread() // To be safe
+        logd("startDecoderThread...")
         if (this.decoding && isPreviewActive) {
+            logd("startDecoderThread... YES")
             cropRect = previewFramingRect
             taskHandler = TaskHandler("decoder")
             requestNextPreview()
@@ -89,10 +92,7 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
     }
 
     private fun requestNextPreview() {
-        val ci = cameraInstance ?: return
-        if (ci.isOpen) {
-            ci.requestPreview(this)
-        }
+        cameraInstance?.requestPreview(this)
     }
 
 

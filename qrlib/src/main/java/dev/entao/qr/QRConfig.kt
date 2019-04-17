@@ -21,14 +21,13 @@ object QRConfig {
     var enableFromImageFile: Boolean = true
 
 
-    var width = 250.dp  //-1;
-    var height = 250.dp //-1;
+    var width = 240.dp  //-1;
+    var height = 240.dp //-1;
 
     var possibleResultPoints = 0XC0FFBD21L.color
     var viewfinderLaser = 0XFFCC0000L.color
     var viewfinderMask = 0x60000000L.color
 
     var isExposureEnabled = false
-    var isAutoTorchEnabled = false
 
 }

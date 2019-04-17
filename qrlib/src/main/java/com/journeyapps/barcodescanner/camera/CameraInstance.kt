@@ -1,16 +1,17 @@
-@file:Suppress("DEPRECATION")
+@file:Suppress("DEPRECATION", "MemberVisibilityCanBePrivate")
 
 package com.journeyapps.barcodescanner.camera
 
 import android.content.Context
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
-import android.util.Log
 import android.view.Surface
 import com.journeyapps.barcodescanner.SourceData
-import dev.entao.appbase.App.context
 import dev.entao.qr.QRConfig
-import dev.entao.qr.camera.*
+import dev.entao.qr.camera.AutoFocusManager
+import dev.entao.qr.camera.ConfigUtil
+import dev.entao.qr.camera.PreviewDataCallback
+import dev.entao.qr.camera.Size
 import java.util.*
 
 
@@ -26,7 +27,7 @@ import java.util.*
  * 6. stopPreview()
  * 7. close()
  */
-class CameraInstance(context: Context ) : Camera.PreviewCallback {
+class CameraInstance(context: Context) : Camera.PreviewCallback {
 
 
     private var camera: Camera? = null
@@ -36,7 +37,6 @@ class CameraInstance(context: Context ) : Camera.PreviewCallback {
     private var cameraInfo: Camera.CameraInfo? = null
 
     private var focusManager: AutoFocusManager? = null
-    private var lightManager: LightManager? = null
 
     private var previewing: Boolean = false
 
@@ -45,61 +45,35 @@ class CameraInstance(context: Context ) : Camera.PreviewCallback {
 
     val configured: Boolean get() = displayConfiguration != null
 
-    // Actual chosen preview size
-    private var requestedPreviewSize: Size? = null
-    /**
-     * Actual preview size in *natural camera* orientation. null if not determined yet.
-     *
-     * @return preview size
-     */
-    var naturalPreviewSize: Size? = null
-        private set
-
     /**
      * @return the camera rotation relative to display rotation, in degrees. Typically 0 if the
      * display is in landscape orientation.
      */
-    var cameraRotation = -1
-        private set    // camera rotation vs display rotation
+    private var cameraRotation = -1
 
-
-    /**
-     * @return true if the camera rotation is perpendicular to the current display rotation.
-     */
-    val isCameraRotated: Boolean
-        get() {
-            if (cameraRotation == -1) {
-                throw IllegalStateException("Rotation not calculated yet. Call configure() first.")
-            }
-            return cameraRotation % 180 != 0
-        }
-
-
-    /**
-     * Actual preview size in *current display* rotation. null if not determined yet.
-     *
-     * @return preview size
-     */
-    val previewSize: Size?
-        get() = when {
-            naturalPreviewSize == null -> null
-            this.isCameraRotated -> naturalPreviewSize!!.rotate()
-            else -> naturalPreviewSize
-        }
 
     val isTorchOn: Boolean
         get() {
-            val parameters = camera!!.parameters
-            if (parameters != null) {
-                val flashMode = parameters.flashMode
-                return flashMode != null && (Camera.Parameters.FLASH_MODE_ON == flashMode || Camera.Parameters.FLASH_MODE_TORCH == flashMode)
-            } else {
-                return false
-            }
+            val parameters = camera?.parameters ?: return false
+            val flashMode = parameters.flashMode ?: return false
+            return Camera.Parameters.FLASH_MODE_ON == flashMode || Camera.Parameters.FLASH_MODE_TORCH == flashMode
         }
 
     private var resolution: Size? = null
     private var callback: PreviewDataCallback? = null
+
+
+    init {
+        for (i in 0 until Camera.getNumberOfCameras()) {
+            val info = Camera.CameraInfo()
+            Camera.getCameraInfo(i, info)
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                camera = Camera.open(i)
+                this.cameraInfo = info
+                break
+            }
+        }
+    }
 
     override fun onPreviewFrame(data: ByteArray, camera: Camera) {
         val sz = resolution ?: return
@@ -109,45 +83,72 @@ class CameraInstance(context: Context ) : Camera.PreviewCallback {
         cb.onPreview(source)
     }
 
-    fun open() {
-        for (i in 0 until Camera.getNumberOfCameras()) {
-            val info = Camera.CameraInfo()
-            Camera.getCameraInfo(i, info)
-            if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
-                camera = Camera.open(i)
-                this.cameraInfo = info
-                return
-            }
-        }
-    }
 
-    fun configureCamera(cfg: DisplayConfiguration) :Size {
+    fun configureCamera(cfg: DisplayConfiguration): Size? {
         this.displayConfiguration = cfg
+        var isCameraRotated = false
         try {
-            this.cameraRotation = calculateDisplayRotation()
-            setCameraDisplayOrientation(cameraRotation)
+            val degrees = when (cfg.rotation) {
+                Surface.ROTATION_0 -> 0
+                Surface.ROTATION_90 -> 90
+                Surface.ROTATION_180 -> 180
+                Surface.ROTATION_270 -> 270
+                else -> 0
+            }
+            val result: Int = if (cameraInfo!!.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+                val a = (cameraInfo!!.orientation + degrees) % 360
+                (360 - a) % 360  // compensate the mirror
+            } else {  // back-facing
+                (cameraInfo!!.orientation - degrees + 360) % 360
+            }
+            this.cameraRotation = result
+            isCameraRotated = result % 180 != 0
+            camera?.setDisplayOrientation(result)
         } catch (e: Exception) {
-            Log.w("Camera", "Failed to set rotation.")
         }
 
+
+        val paramList = camera!!.parameters
+        ConfigUtil.setFocus(paramList)
+        ConfigUtil.setBarcodeSceneMode(paramList)
+        ConfigUtil.setTorch(paramList, false)
+
+        val supportedSizes = paramList.supportedPreviewSizes //This method will always return a list with at least one element
+        val sizeList = ArrayList<Size>()
+        for (size in supportedSizes) {
+            sizeList.add(Size(size.width, size.height))
+        }
+        val reqSize = cfg.getBestPreviewSize(sizeList, isCameraRotated)
+        paramList.setPreviewSize(reqSize.width, reqSize.height)
         try {
-            setDesiredParameters(false)
+            camera?.parameters = paramList
         } catch (e: Exception) {
-            try {
-                setDesiredParameters(true)
-            } catch (e2: Exception) {
-            }
+
+        }
+        try {
+            val pEx = camera!!.parameters
+            ConfigUtil.setVideoStabilization(pEx)
+            ConfigUtil.setFocusArea(pEx)
+            ConfigUtil.setMetering(pEx)
+            camera?.parameters = pEx
+        } catch (ex: Exception) {
+
         }
 
         val realPreviewSize = camera!!.parameters.previewSize
-        naturalPreviewSize = if (realPreviewSize == null) {
-            requestedPreviewSize
+        val naturalPreviewSize = if (realPreviewSize == null) {
+            reqSize
         } else {
             Size(realPreviewSize.width, realPreviewSize.height)
         }
         this.resolution = naturalPreviewSize
 
-        return previewSize!!
+
+        return if (isCameraRotated) {
+            naturalPreviewSize.rotate()
+        } else {
+            naturalPreviewSize
+        }
     }
 
     fun startPreview(texure: SurfaceTexture) {
@@ -157,10 +158,6 @@ class CameraInstance(context: Context ) : Camera.PreviewCallback {
             theCamera.startPreview()
             previewing = true
             focusManager = AutoFocusManager(theCamera)
-            if (QRConfig.isAutoTorchEnabled) {
-                lightManager = LightManager(context, this)
-                lightManager?.start()
-            }
         }
 
     }
@@ -185,8 +182,6 @@ class CameraInstance(context: Context ) : Camera.PreviewCallback {
         if (isOpen) {
             focusManager?.stop()
             focusManager = null
-            lightManager?.stop()
-            lightManager = null
             if (previewing) {
                 camera?.stopPreview()
                 this.callback = null
@@ -205,73 +200,5 @@ class CameraInstance(context: Context ) : Camera.PreviewCallback {
         }
     }
 
-
-    private fun setDesiredParameters(safeMode: Boolean) {
-        val parameters = camera!!.parameters
-        ConfigUtil.setFocus(parameters)
-        ConfigUtil.setBarcodeSceneMode(parameters)
-
-        if (!safeMode) {
-            ConfigUtil.setTorch(parameters, false)
-            ConfigUtil.setVideoStabilization(parameters)
-            ConfigUtil.setFocusArea(parameters)
-            ConfigUtil.setMetering(parameters)
-        }
-
-        val previewSizes = getPreviewSizes(parameters)
-        if (previewSizes.isEmpty()) {
-            requestedPreviewSize = null
-        } else {
-            requestedPreviewSize = displayConfiguration!!.getBestPreviewSize(previewSizes, isCameraRotated)
-
-            parameters.setPreviewSize(requestedPreviewSize!!.width, requestedPreviewSize!!.height)
-        }
-
-
-
-        camera!!.parameters = parameters
-    }
-
-
-    private fun calculateDisplayRotation(): Int {
-        // http://developer.android.com/reference/android/hardware/Camera.html#setDisplayOrientation(int)
-        val rotation = displayConfiguration!!.rotation
-        var degrees = 0
-        when (rotation) {
-            Surface.ROTATION_0 -> degrees = 0
-            Surface.ROTATION_90 -> degrees = 90
-            Surface.ROTATION_180 -> degrees = 180
-            Surface.ROTATION_270 -> degrees = 270
-        }
-
-        var result: Int
-        if (cameraInfo!!.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
-            result = (cameraInfo!!.orientation + degrees) % 360
-            result = (360 - result) % 360  // compensate the mirror
-        } else {  // back-facing
-            result = (cameraInfo!!.orientation - degrees + 360) % 360
-        }
-        Log.i("Camera", "Camera Display Orientation: $result")
-        return result
-    }
-
-    private fun setCameraDisplayOrientation(rotation: Int) {
-        camera!!.setDisplayOrientation(rotation)
-    }
-
-
-    private fun getPreviewSizes(parameters: Camera.Parameters): List<Size> {
-        val supportedSizes = parameters.supportedPreviewSizes
-        val ls = ArrayList<Size>()
-        if (supportedSizes == null) {
-            val sz = parameters.previewSize ?: return ls
-            ls.add(Size(sz.width, sz.height))
-        } else {
-            for (size in supportedSizes) {
-                ls.add(Size(size.width, size.height))
-            }
-        }
-        return ls
-    }
 
 }

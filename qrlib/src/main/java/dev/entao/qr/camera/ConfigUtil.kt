@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
+@file:Suppress("unused", "DEPRECATION")
+
 package dev.entao.qr.camera
 
-import android.annotation.TargetApi
 import android.graphics.Rect
 import android.hardware.Camera
 import android.os.Build
@@ -45,14 +46,12 @@ object ConfigUtil {
             Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO,
             Camera.Parameters.FOCUS_MODE_MACRO,
             Camera.Parameters.FOCUS_MODE_AUTO
-        )
-        if (s != null) {
-            parameters.focusMode = s
-        }
+        ) ?: return
+        parameters.focusMode = s
     }
 
     fun setTorch(parameters: Camera.Parameters, on: Boolean) {
-        val flashMode: String? = if (on) {
+        val flashMode: String = if (on) {
             findSettableValue(
                 parameters.supportedFlashModes,
                 Camera.Parameters.FLASH_MODE_TORCH,
@@ -63,12 +62,9 @@ object ConfigUtil {
                 parameters.supportedFlashModes,
                 Camera.Parameters.FLASH_MODE_OFF
             )
-        }
-        if (flashMode != null) {
-            if (flashMode == parameters.flashMode) {
-            } else {
-                parameters.flashMode = flashMode
-            }
+        } ?: return
+        if (flashMode != parameters.flashMode) {
+            parameters.flashMode = flashMode
         }
     }
 
@@ -89,40 +85,21 @@ object ConfigUtil {
                 Log.i(TAG, "Setting exposure compensation to $compensationSteps / $actualCompensation")
                 parameters.exposureCompensation = compensationSteps
             }
-        } else {
-            Log.i(TAG, "Camera does not support exposure compensation")
         }
     }
 
-    @JvmOverloads
     fun setBestPreviewFPS(parameters: Camera.Parameters, minFPS: Int = MIN_FPS, maxFPS: Int = MAX_FPS) {
-        val supportedPreviewFpsRanges = parameters.supportedPreviewFpsRange
-        Log.i(TAG, "Supported FPS ranges: " + toString(supportedPreviewFpsRanges))
-        if (supportedPreviewFpsRanges != null && !supportedPreviewFpsRanges.isEmpty()) {
-            var suitableFPSRange: IntArray? = null
-            for (fpsRange in supportedPreviewFpsRanges) {
-                val thisMin = fpsRange[Camera.Parameters.PREVIEW_FPS_MIN_INDEX]
-                val thisMax = fpsRange[Camera.Parameters.PREVIEW_FPS_MAX_INDEX]
-                if (thisMin >= minFPS * 1000 && thisMax <= maxFPS * 1000) {
-                    suitableFPSRange = fpsRange
-                    break
-                }
-            }
-            if (suitableFPSRange == null) {
-                Log.i(TAG, "No suitable FPS range?")
-            } else {
-                val currentFpsRange = IntArray(2)
-                parameters.getPreviewFpsRange(currentFpsRange)
-                if (Arrays.equals(currentFpsRange, suitableFPSRange)) {
-                    Log.i(TAG, "FPS range already set to " + Arrays.toString(suitableFPSRange))
-                } else {
-                    Log.i(TAG, "Setting FPS range to " + Arrays.toString(suitableFPSRange))
-                    parameters.setPreviewFpsRange(
-                        suitableFPSRange[Camera.Parameters.PREVIEW_FPS_MIN_INDEX],
-                        suitableFPSRange[Camera.Parameters.PREVIEW_FPS_MAX_INDEX]
-                    )
-                }
-            }
+        val bestRange = parameters.supportedPreviewFpsRange?.firstOrNull {
+            it[Camera.Parameters.PREVIEW_FPS_MIN_INDEX] >= minFPS * 1000 && it[Camera.Parameters.PREVIEW_FPS_MAX_INDEX] <= maxFPS * 1000
+        } ?: return
+
+        val currentFpsRange = IntArray(2)
+        parameters.getPreviewFpsRange(currentFpsRange)
+        if (!Arrays.equals(currentFpsRange, bestRange)) {
+            parameters.setPreviewFpsRange(
+                bestRange[Camera.Parameters.PREVIEW_FPS_MIN_INDEX],
+                bestRange[Camera.Parameters.PREVIEW_FPS_MAX_INDEX]
+            )
         }
     }
 
@@ -181,14 +158,18 @@ object ConfigUtil {
     }
 
     private fun indexOfClosestZoom(parameters: Camera.Parameters, targetZoomRatio: Double): Int? {
-        val ratios = parameters.zoomRatios
-        Log.i(TAG, "Zoom ratios: " + ratios!!)
+        if(!parameters.isZoomSupported) {
+            return null
+        }
+        val ratios = parameters.zoomRatios ?: return null
+        Log.i(TAG, "Zoom ratios: $ratios")
         val maxZoom = parameters.maxZoom
-        if (ratios == null || ratios.isEmpty() || ratios.size != maxZoom + 1) {
+        if (ratios.isEmpty() || ratios.size != maxZoom + 1) {
             Log.w(TAG, "Invalid zoom ratios!")
             return null
         }
         val target100 = 100.0 * targetZoomRatio
+
         var smallestDiff = java.lang.Double.POSITIVE_INFINITY
         var closestIndex = 0
         for (i in ratios.indices) {
@@ -243,7 +224,6 @@ object ConfigUtil {
         return buffer.toString()
     }
 
-    @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1)
     private fun toString(areas: Iterable<Camera.Area>?): String? {
         if (areas == null) {
             return null

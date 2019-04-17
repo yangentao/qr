@@ -21,7 +21,6 @@ package dev.entao.qr.camera
 import android.hardware.Camera
 import android.os.Handler
 import android.os.Looper
-import dev.entao.log.logd
 import dev.entao.log.loge
 
 class AutoFocusManager(private val camera: Camera) {
@@ -40,6 +39,9 @@ class AutoFocusManager(private val camera: Camera) {
     }
 
     fun start() {
+        if (!useAutoFocus) {
+            return
+        }
         stopped = false
         focus()
     }
@@ -58,7 +60,6 @@ class AutoFocusManager(private val camera: Camera) {
 
     private val autoFocusCallback = Camera.AutoFocusCallback { ok, _ ->
         focusing = false
-        logd("Focus Result: ", ok)
         handler.postDelayed({
             focus()
         }, INTERVAL_MS)

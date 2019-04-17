@@ -1,3 +1,5 @@
+@file:Suppress("MemberVisibilityCanBePrivate")
+
 package com.journeyapps.barcodescanner
 
 import android.annotation.SuppressLint
@@ -8,7 +10,6 @@ import android.graphics.Matrix
 import android.graphics.Rect
 import android.graphics.SurfaceTexture
 import android.os.Bundle
-import android.os.Handler
 import android.os.Parcelable
 import android.util.Log
 import android.view.TextureView
@@ -17,7 +18,6 @@ import android.view.WindowManager
 import com.journeyapps.barcodescanner.camera.CameraInstance
 import com.journeyapps.barcodescanner.camera.DisplayConfiguration
 import dev.entao.qr.QRConfig
-import dev.entao.qr.R
 import dev.entao.qr.camera.RotationCallback
 import dev.entao.qr.camera.RotationListener
 import dev.entao.qr.camera.Size
@@ -370,13 +370,13 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
 
     private fun startPreviewIfReady() {
         if (currentSurfaceSize != null && previewSize != null && surfaceRect != null) {
-            if (textureView != null && textureView!!.surfaceTexture != null) {
+            if (textureView.surfaceTexture != null) {
                 if (previewSize != null) {
-                    val transform = calculateTextureTransform(Size(textureView!!.width, textureView!!.height), previewSize!!)
-                    textureView!!.setTransform(transform)
+                    val transform = calculateTextureTransform(Size(textureView.width, textureView.height), previewSize!!)
+                    textureView.setTransform(transform)
                 }
 
-                startCameraPreview(textureView!!.surfaceTexture)
+                startCameraPreview(textureView.surfaceTexture)
             } else {
                 // Surface is not the correct size yet
             }
@@ -386,7 +386,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     @SuppressLint("DrawAllocation")
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         containerSized(Size(r - l, b - t))
-        textureView!!.layout(0, 0, width, height)
+        textureView.layout(0, 0, width, height)
     }
 
 
@@ -403,7 +403,6 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
             return
         }
         cameraInstance = CameraInstance(context)
-        cameraInstance?.open()
 
         // Keep track of the orientation we opened at, so that we don't reopen the camera if we
         // don't need to.
@@ -413,11 +412,11 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
             // The activity was paused but not stopped, so the surface still exists. Therefore
             // surfaceCreated() won't be called, so init the camera here.
             startPreviewIfReady()
-        } else if (textureView != null) {
-            if (textureView!!.isAvailable) {
+        } else  {
+            if (textureView.isAvailable) {
                 surfaceTextureListener().onSurfaceTextureAvailable(textureView!!.surfaceTexture, textureView!!.width, textureView!!.height)
             } else {
-                textureView!!.surfaceTextureListener = surfaceTextureListener()
+                textureView.surfaceTextureListener = surfaceTextureListener()
             }
         }
 
@@ -438,8 +437,8 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
         cameraInstance = null
         isPreviewActive = false
 
-        if (currentSurfaceSize == null && textureView != null) {
-            textureView!!.surfaceTextureListener = null
+        if (currentSurfaceSize == null) {
+            textureView.surfaceTextureListener = null
         }
 
         this.containerSize = null
