@@ -27,6 +27,8 @@ object QRConfig {
 
     var isExposureEnabled = false
 
+    //分辨率, 720, 960, 1080,
+    var resolution:Int = 720
 
     //中间方框的高宽
     var width = 240.dp  //-1;

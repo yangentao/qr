@@ -8,13 +8,14 @@ import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.view.Surface
 import android.view.TextureView
+import android.view.WindowManager
 import com.journeyapps.barcodescanner.SourceData
+import dev.entao.appbase.App.context
 import dev.entao.qr.QRConfig
 import dev.entao.qr.camera.AutoFocusManager
 import dev.entao.qr.camera.ConfigUtil
 import dev.entao.qr.camera.PreviewDataCallback
 import dev.entao.qr.camera.Size
-import java.util.*
 
 
 /**
@@ -44,8 +45,13 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
 
 
     private var cameraRotation = -1
+
     var previewSize: Size = Size(0, 0)
         private set
+
+    private var resolution: Size = Size(0, 0)
+
+    private var callback: PreviewDataCallback? = null
 
     val isTorchOn: Boolean
         get() {
@@ -53,10 +59,6 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
             val flashMode = parameters.flashMode ?: return false
             return Camera.Parameters.FLASH_MODE_ON == flashMode || Camera.Parameters.FLASH_MODE_TORCH == flashMode
         }
-
-    private var resolution: Size? = null
-    private var callback: PreviewDataCallback? = null
-
 
     init {
         for (i in 0 until Camera.getNumberOfCameras()) {
@@ -74,6 +76,9 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
             ConfigUtil.setFocus(paramList)
             ConfigUtil.setBarcodeSceneMode(paramList)
             ConfigUtil.setTorch(paramList, false)
+            val reqSize = find720(paramList)
+            paramList.setPreviewSize(reqSize.width, reqSize.height)
+            this.resolution = reqSize
             try {
                 cam.parameters = paramList
             } catch (e: Exception) {
@@ -92,10 +97,11 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
     }
 
 
-    fun configureCamera(cfg: DisplayConfiguration) {
+    fun configureCamera() {
+        val rotation = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
         var isCameraRotated = false
         try {
-            val degrees = when (cfg.rotation) {
+            val degrees = when (rotation) {
                 Surface.ROTATION_0 -> 0
                 Surface.ROTATION_90 -> 90
                 Surface.ROTATION_180 -> 180
@@ -114,37 +120,33 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
         } catch (e: Exception) {
         }
 
-
-        val paramList = camera!!.parameters
-        val supportedSizes = paramList.supportedPreviewSizes //This method will always return a list with at least one element
-        val sizeList = ArrayList<Size>()
-        for (size in supportedSizes) {
-            sizeList.add(Size(size.width, size.height))
-        }
-        val reqSize = cfg.getBestPreviewSize(sizeList, isCameraRotated)
-        paramList.setPreviewSize(reqSize.width, reqSize.height)
-        try {
-            camera?.parameters = paramList
-        } catch (e: Exception) {
-
-        }
-
-        val realPreviewSize = camera!!.parameters.previewSize
-        val naturalPreviewSize = if (realPreviewSize == null) {
-            reqSize
-        } else {
-            Size(realPreviewSize.width, realPreviewSize.height)
-        }
-        this.resolution = naturalPreviewSize
-
         this.previewSize = if (isCameraRotated) {
-            naturalPreviewSize.rotate()
+            this.resolution.rotate()
         } else {
-            naturalPreviewSize
+            this.resolution
         }
-
         val mx = this.calculateTextureTransform(surfaceSize, previewSize)
         this.textureView.setTransform(mx)
+    }
+
+    private fun find720(ps: Camera.Parameters): Size {
+        val ls = ps.supportedPreviewSizes
+        val sz = ls.firstOrNull {
+            it.height == 720
+        } ?: ls.firstOrNull {
+            it.height == 960
+        } ?: ls.firstOrNull {
+            it.height == 1080 && it.width == 1440
+        } ?: ls.firstOrNull {
+            it.height == 1080 && it.width == 1920
+        } ?: ls.firstOrNull {
+            it.height == 1080
+        } ?: ls.filter { it.height >= 720 }.minBy { it.height } ?: ls.firstOrNull {
+            it.height == 480 && it.width == 800
+        } ?: ls.firstOrNull {
+            it.height == 640
+        } ?: ls.first()
+        return Size(sz.width, sz.height)
     }
 
     private fun calculateTextureTransform(textureSize: Size, previewSize: Size): Matrix {

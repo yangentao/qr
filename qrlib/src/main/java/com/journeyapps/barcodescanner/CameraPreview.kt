@@ -6,16 +6,14 @@ import android.content.Context
 import android.graphics.Color
 import android.graphics.Rect
 import android.graphics.SurfaceTexture
-import android.util.Log
 import android.view.TextureView
-import android.view.WindowManager
 import android.widget.FrameLayout
 import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
 import com.journeyapps.barcodescanner.camera.CameraInstance
-import com.journeyapps.barcodescanner.camera.DisplayConfiguration
+import dev.entao.log.logd
 import dev.entao.qr.QRConfig
 import dev.entao.qr.TaskHandler
 import dev.entao.qr.camera.*
@@ -70,9 +68,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
     private val stateListeners = ArrayList<StateListener>()
 
-
-    // Rect placing the preview surface
-    private var surfaceRect: Rect? = null
 
 
     var framingRect: Rect? = null
@@ -134,9 +129,6 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
      */
     val isActive: Boolean
         get() = cameraInstance != null
-
-    private val displayRotation: Int
-        get() = (context.getSystemService(Context.WINDOW_SERVICE) as WindowManager).defaultDisplay.rotation
 
     interface StateListener {
         /**
@@ -228,6 +220,13 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
         containerSized(Size(width, height))
     }
 
+    private fun containerSized(containerSize: Size) {
+        val ci = cameraInstance ?: return
+        ci.configureCamera()
+        calculateFrames(containerSize)
+
+        startPreviewIfReady()
+    }
 
     override fun foundPossibleResultPoint(point: ResultPoint) {
         decoder.foundPossibleResultPoint(point)
@@ -299,43 +298,39 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
         stateListeners.add(listener)
     }
 
-    private fun calculateFrames(dc: DisplayConfiguration) {
+    private fun calculateFrames(containerSize: Size) {
         val camInst = this.cameraInstance ?: return
         val preSize = camInst.previewSize
 
         val previewWidth = preSize.width
         val previewHeight = preSize.height
 
-        surfaceRect = dc.scalePreview(preSize)
 
+        //取景窗在界面上的位置
         framingRect = calculateFramingRect(Rect(0, 0, camInst.surfaceSize.width, camInst.surfaceSize.height))
+
+        val surfaceRect = scalePreview(preSize, containerSize)
+        logd("SurfaceRect: $surfaceRect", "preSize: $preSize", " containerSize: $containerSize")
         val frameInPreview = Rect(framingRect)
-        frameInPreview.offset(-surfaceRect!!.left, -surfaceRect!!.top)
+        frameInPreview.offset(-surfaceRect.left, -surfaceRect.top)
+        logd("frameInPreview", frameInPreview)
 
+        //取景窗在截取的图片上的位置
         previewFramingRect = Rect(
-            frameInPreview.left * previewWidth / surfaceRect!!.width(),
-            frameInPreview.top * previewHeight / surfaceRect!!.height(),
-            frameInPreview.right * previewWidth / surfaceRect!!.width(),
-            frameInPreview.bottom * previewHeight / surfaceRect!!.height()
+            frameInPreview.left * previewWidth / surfaceRect.width(),
+            frameInPreview.top * previewHeight / surfaceRect.height(),
+            frameInPreview.right * previewWidth / surfaceRect.width(),
+            frameInPreview.bottom * previewHeight / surfaceRect.height()
         )
-
-        if (previewFramingRect!!.width() <= 0 || previewFramingRect!!.height() <= 0) {
-            previewFramingRect = null
-            framingRect = null
-            Log.w(TAG, "Preview frame is too small")
-        } else {
-            fireState.previewSized()
-        }
+        logd("previewFramingRect", previewFramingRect)
+        fireState.previewSized()
     }
 
-
-    private fun containerSized(containerSize: Size) {
-        val ci = cameraInstance ?: return
-        val dc = DisplayConfiguration(displayRotation, containerSize)
-        ci.configureCamera(dc)
-        calculateFrames(dc)
-
-        startPreviewIfReady()
+    private fun scalePreview(previewSize: Size, viewfinderSize: Size): Rect {
+        val scaledPreview = previewSize.scaleCrop(viewfinderSize)
+        val dx = (scaledPreview.width - viewfinderSize.width) / 2
+        val dy = (scaledPreview.height - viewfinderSize.height) / 2
+        return Rect(-dx, -dy, scaledPreview.width - dx, scaledPreview.height - dy)
     }
 
 
@@ -346,15 +341,11 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
 
     private fun startPreviewIfReady() {
         val camInst = this.cameraInstance ?: return
-        if (surfaceRect != null) {
-            if (!isPreviewActive) {
-                Log.i(TAG, "Starting preview")
-                camInst.startPreview()
-                isPreviewActive = true
-
-                startDecoderThread()
-                fireState.previewStarted()
-            }
+        if (!isPreviewActive) {
+            camInst.startPreview()
+            isPreviewActive = true
+            startDecoderThread()
+            fireState.previewStarted()
         }
     }
 
