@@ -9,7 +9,6 @@ import android.hardware.Camera
 import android.view.Surface
 import android.view.TextureView
 import android.view.WindowManager
-import com.journeyapps.barcodescanner.SourceData
 import dev.entao.appbase.App.context
 import dev.entao.qr.QRConfig
 

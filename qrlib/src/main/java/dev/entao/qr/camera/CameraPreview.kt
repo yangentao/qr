@@ -12,7 +12,6 @@ import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
-import com.journeyapps.barcodescanner.SourceData
 import dev.entao.log.logd
 import dev.entao.qr.QRConfig
 import dev.entao.qr.TaskHandler
