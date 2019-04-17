@@ -6,6 +6,7 @@ import android.content.Context
 import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.view.Surface
+import android.view.TextureView
 import com.journeyapps.barcodescanner.SourceData
 import dev.entao.qr.QRConfig
 import dev.entao.qr.camera.AutoFocusManager
@@ -27,7 +28,7 @@ import java.util.*
  * 6. stopPreview()
  * 7. close()
  */
-class CameraInstance(context: Context) : Camera.PreviewCallback {
+class CameraInstance(context: Context, val textureView: TextureView, val surface: SurfaceTexture, val surfaceSize: Size) : Camera.PreviewCallback {
 
 
     private var camera: Camera? = null
@@ -72,6 +73,10 @@ class CameraInstance(context: Context) : Camera.PreviewCallback {
                 break
             }
         }
+    }
+
+    fun changeSize(size: Size) {
+        //TODO changeSize
     }
 
     override fun onPreviewFrame(data: ByteArray, camera: Camera) {
@@ -150,9 +155,9 @@ class CameraInstance(context: Context) : Camera.PreviewCallback {
         }
     }
 
-    fun startPreview(texure: SurfaceTexture) {
+    fun startPreview() {
         val theCamera = camera ?: return
-        theCamera.setPreviewTexture(texure)
+        theCamera.setPreviewTexture(surface)
         if (!previewing) {
             theCamera.startPreview()
             previewing = true

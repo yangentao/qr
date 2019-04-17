@@ -2,7 +2,6 @@
 
 package com.journeyapps.barcodescanner
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Matrix
@@ -12,15 +11,20 @@ import android.os.Bundle
 import android.os.Parcelable
 import android.util.Log
 import android.view.TextureView
-import android.view.ViewGroup
 import android.view.WindowManager
+import android.widget.FrameLayout
+import com.google.zxing.DecodeHintType
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.ResultPoint
+import com.google.zxing.ResultPointCallback
 import com.journeyapps.barcodescanner.camera.CameraInstance
 import com.journeyapps.barcodescanner.camera.DisplayConfiguration
 import dev.entao.log.logd
 import dev.entao.qr.QRConfig
-import dev.entao.qr.camera.RotationCallback
-import dev.entao.qr.camera.RotationListener
-import dev.entao.qr.camera.Size
+import dev.entao.qr.TaskHandler
+import dev.entao.qr.camera.*
+import dev.entao.ui.ext.FParam
+import dev.entao.ui.ext.Fill
 import dev.entao.util.Task
 import java.util.*
 
@@ -50,12 +54,12 @@ import java.util.*
  * 6. set surface size according to preview size
  * 7. set surface and start preview
  */
-open class CameraPreview(context: Context) : ViewGroup(context), TextureView.SurfaceTextureListener {
+class CameraPreview(context: Context) : FrameLayout(context), TextureView.SurfaceTextureListener, ResultPointCallback, PreviewDataCallback {
 
     var cameraInstance: CameraInstance? = null
         private set
 
-    private lateinit var textureView: TextureView
+    private var textureView: TextureView
 
     /**
      * The preview typically starts being active a while after calling resume(), and stops
@@ -80,8 +84,6 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
     // Rect placing the preview surface
     private var surfaceRect: Rect? = null
 
-    // Size of the current surface. non-null if the surface is ready
-    private var currentSurfaceSize: Size? = null
 
     // Framing rectangle relative to this view
     /**
@@ -135,6 +137,13 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
 
 
     private var torchOn = false
+
+    private var callback: BarcodeCallback? = null
+    private val decoding: Boolean get() = callback != null
+
+    private var taskHandler: TaskHandler? = null
+    private var cropRect: Rect? = null
+    private val decoder: Decoder
 
 
     private val fireState = object : StateListener {
@@ -207,33 +216,105 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
         if (framingRectWidth > 0 && framingRectHeight > 0) {
             this.framingRectSize = Size(framingRectWidth, framingRectHeight)
         }
+        setBackgroundColor(Color.BLACK)
+        textureView = TextureView(context)
+        textureView.surfaceTextureListener = this
+        addView(textureView, FParam.Fill)
+
+        val hints = EnumMap<DecodeHintType, Any>(DecodeHintType::class.java)
+        hints[DecodeHintType.NEED_RESULT_POINT_CALLBACK] = this
+        hints[DecodeHintType.POSSIBLE_FORMATS] = QRConfig.decodeSet
+        hints[DecodeHintType.CHARACTER_SET] = QRConfig.charset
+        val reader = MultiFormatReader()
+        reader.setHints(hints)
+        decoder = Decoder(reader)
     }
+
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture, width: Int, height: Int) {
         logd("onSurfaceTextureAvailable", width, height)
+        cameraInstance = CameraInstance(context, this.textureView, surface, Size(width, height))
         onSurfaceTextureSizeChanged(surface, width, height)
     }
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture, width: Int, height: Int) {
         logd("onSurfaceTextureSizeChanged", width, height)
-        currentSurfaceSize = Size(width, height)
+        cameraInstance?.changeSize(Size(width, height))
+        containerSized(Size(width, height))
         startPreviewIfReady()
     }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
         logd("onSurfaceTextureDestroyed")
+        cameraInstance?.close()
+        cameraInstance = null
         return false
     }
 
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
     }
 
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        setBackgroundColor(Color.BLACK)
-        textureView = TextureView(context)
-        textureView.surfaceTextureListener = this
-        addView(textureView)
+
+    override fun foundPossibleResultPoint(point: ResultPoint) {
+        decoder.foundPossibleResultPoint(point)
+    }
+
+    fun decodeSingle(callback: BarcodeCallback) {
+        this.callback = callback
+        startDecoderThread()
+    }
+
+
+    fun stopDecoding() {
+        this.callback = null
+        stopDecoderThread()
+    }
+
+
+    private fun startDecoderThread() {
+        stopDecoderThread() // To be safe
+        logd("startDecoderThread...")
+        if (this.decoding && isPreviewActive) {
+            logd("startDecoderThread... YES")
+            cropRect = previewFramingRect
+            taskHandler = TaskHandler("decoder")
+            requestNextPreview()
+        }
+    }
+
+    private fun stopDecoderThread() {
+        taskHandler?.quit()
+        taskHandler = null
+    }
+
+    override fun onPreview(sourceData: SourceData) {
+        taskHandler?.post {
+            decode(sourceData)
+        }
+    }
+
+    private fun requestNextPreview() {
+        cameraInstance?.requestPreview(this)
+    }
+
+
+    private fun decode(sourceData: SourceData) {
+        val rect = this.cropRect ?: return requestNextPreview()
+
+        sourceData.cropRect = rect
+        val source = sourceData.createSource()
+        val rawResult = decoder.decode(source)
+        if (rawResult != null) {
+            val r = BarcodeResult(rawResult)
+            callback?.barcodeResult(r)
+            stopDecoding()
+            return
+        }
+        val ps = decoder.possibleResultPoints
+        if (ps.isNotEmpty()) {
+            callback?.possibleResultPoints(ps)
+        }
+        requestNextPreview()
     }
 
 
@@ -256,7 +337,7 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
     }
 
     private fun calculateFrames(displayConfiguration: DisplayConfiguration) {
-        if (containerSize == null || previewSize == null || displayConfiguration == null) {
+        if (containerSize == null || previewSize == null) {
             previewFramingRect = null
             framingRect = null
             surfaceRect = null
@@ -270,7 +351,7 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
         val width = containerSize!!.width
         val height = containerSize!!.height
 
-        surfaceRect = displayConfiguration!!.scalePreview(preSize)
+        surfaceRect = displayConfiguration.scalePreview(preSize)
 
         val container = Rect(0, 0, width, height)
         framingRect = calculateFramingRect(container, surfaceRect)
@@ -367,24 +448,22 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
     }
 
     private fun startPreviewIfReady() {
-        if (currentSurfaceSize != null && previewSize != null && surfaceRect != null) {
-            if (textureView.surfaceTexture != null) {
-                if (previewSize != null) {
-                    val transform = calculateTextureTransform(Size(textureView.width, textureView.height), previewSize!!)
-                    textureView.setTransform(transform)
-                }
+        val camInst = this.cameraInstance ?: return
+        if (previewSize != null && surfaceRect != null) {
+            if (previewSize != null) {
+                val transform = calculateTextureTransform(camInst.surfaceSize, previewSize!!)
+                textureView.setTransform(transform)
+            }
 
-                startCameraPreview(textureView.surfaceTexture)
-            } else {
-                // Surface is not the correct size yet
+            if (!isPreviewActive) {
+                Log.i(TAG, "Starting preview")
+                camInst.startPreview()
+                isPreviewActive = true
+
+                startDecoderThread()
+                fireState.previewStarted()
             }
         }
-    }
-
-    @SuppressLint("DrawAllocation")
-    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-        containerSized(Size(r - l, b - t))
-        textureView.layout(0, 0, width, height)
     }
 
 
@@ -397,30 +476,20 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
      */
     fun resume() {
         logd("CameraPreview.resume()")
-        if (cameraInstance != null) {
+        if (cameraInstance == null) {
             Log.w(TAG, "initCamera called twice")
             return
         }
-        cameraInstance = CameraInstance(context)
+
 
         // Keep track of the orientation we opened at, so that we don't reopen the camera if we
         // don't need to.
         openedOrientation = displayRotation
 
-        if (currentSurfaceSize != null) {
-            // The activity was paused but not stopped, so the surface still exists. Therefore
-            // surfaceCreated() won't be called, so init the camera here.
-            startPreviewIfReady()
-        } else {
-            if (textureView.isAvailable) {
-                this.onSurfaceTextureAvailable(textureView.surfaceTexture, textureView.width, textureView.height)
-            } else {
-                textureView.surfaceTextureListener = this
-            }
-        }
+        // The activity was paused but not stopped, so the surface still exists. Therefore
+        // surfaceCreated() won't be called, so init the camera here.
+        startPreviewIfReady()
 
-        // To trigger surfaceSized again
-        requestLayout()
         rotationListener.listen(object : RotationCallback {
             override fun onRotationChanged(rotation: Int) {
                 Task.foreDelay(ROTATION_LISTENER_DELAY_MS.toLong()) {
@@ -430,15 +499,12 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
         })
     }
 
-    open fun pause() {
+    fun pause() {
+        stopDecoderThread()
         openedOrientation = -1
         cameraInstance?.close()
         cameraInstance = null
         isPreviewActive = false
-
-        if (currentSurfaceSize == null) {
-            textureView.surfaceTextureListener = null
-        }
 
         this.containerSize = null
         this.previewSize = null
@@ -448,17 +514,6 @@ open class CameraPreview(context: Context) : ViewGroup(context), TextureView.Sur
         fireState.previewStopped()
     }
 
-
-    private fun startCameraPreview(texure: SurfaceTexture) {
-        if (!isPreviewActive && cameraInstance != null) {
-            Log.i(TAG, "Starting preview")
-            cameraInstance!!.startPreview(texure)
-            isPreviewActive = true
-
-            previewStarted()
-            fireState.previewStarted()
-        }
-    }
 
     /**
      * Called when the preview is started. Override this to start decoding work.

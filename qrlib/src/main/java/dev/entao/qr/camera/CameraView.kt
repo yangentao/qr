@@ -6,7 +6,7 @@ import android.view.KeyEvent
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.google.zxing.ResultPoint
-import com.journeyapps.barcodescanner.BarcodeView
+import com.journeyapps.barcodescanner.CameraPreview
 import com.journeyapps.barcodescanner.ViewfinderView
 import dev.entao.qr.QRConfig
 import dev.entao.ui.creator.createTextViewB
@@ -19,7 +19,7 @@ import dev.entao.ui.ext.*
  * To customize the UI, use BarcodeView and ViewfinderView directly.
  */
 class CameraView(context: Context) : FrameLayout(context) {
-    val barcodeView: BarcodeView = BarcodeView(context).genId()
+    val barcodeView: CameraPreview = CameraPreview(context).genId()
     val viewFinder: ViewfinderView = ViewfinderView(context).genId()
     private val statusView: TextView = context.createTextViewB().textColorWhite().backColor(Color.TRANSPARENT)
 
