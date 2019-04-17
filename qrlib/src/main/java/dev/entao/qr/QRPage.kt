@@ -8,7 +8,7 @@ import android.util.Log
 import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.TextView
-import com.journeyapps.barcodescanner.BarcodeResult
+import dev.entao.qr.camera.BarcodeResult
 import dev.entao.qr.camera.CameraView
 import dev.entao.appbase.ex.ImageStated
 import dev.entao.appbase.ex.sized

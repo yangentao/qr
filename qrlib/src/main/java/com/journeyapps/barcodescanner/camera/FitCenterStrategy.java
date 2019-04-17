@@ -3,7 +3,7 @@ package com.journeyapps.barcodescanner.camera;
 import android.graphics.Rect;
 import android.util.Log;
 
-import com.journeyapps.barcodescanner.Size;
+import dev.entao.qr.camera.Size;
 
 /**
  * Scales the size so that both dimensions will be greater than or equal to the corresponding
@@ -27,12 +27,12 @@ public class FitCenterStrategy extends PreviewScalingStrategy {
      */
     @Override
     protected float getScore(Size size, Size desired) {
-        if(size.width <= 0 || size.height <= 0) {
+        if(size.getWidth() <= 0 || size.getHeight() <= 0) {
             return 0f;
         }
         Size scaled = size.scaleFit(desired);
         // Scaling preserves aspect ratio
-        float scaleRatio = scaled.width * 1.0f / size.width;
+        float scaleRatio = scaled.getWidth() * 1.0f / size.getWidth();
 
         // Treat downscaling as slightly better than upscaling
         float scaleScore;
@@ -46,8 +46,8 @@ public class FitCenterStrategy extends PreviewScalingStrategy {
 
         // Ratio of scaledDimension / dimension.
         // Note that with scaleCrop, only one dimension is cropped.
-        float cropRatio = (desired.width * 1.0f / scaled.width) *
-                (desired.height * 1.0f / scaled.height);
+        float cropRatio = (desired.getWidth() * 1.0f / scaled.getWidth()) *
+                (desired.getHeight() * 1.0f / scaled.getHeight());
 
         // Cropping is very bad, since it's used-visible for centerFit
         // 1.0 means no cropping.
@@ -70,9 +70,9 @@ public class FitCenterStrategy extends PreviewScalingStrategy {
         Size scaledPreview = previewSize.scaleFit(viewfinderSize);
         Log.i(TAG, "Preview: " + previewSize + "; Scaled: " + scaledPreview + "; Want: " + viewfinderSize);
 
-        int dx = (scaledPreview.width - viewfinderSize.width) / 2;
-        int dy = (scaledPreview.height - viewfinderSize.height) / 2;
+        int dx = (scaledPreview.getWidth() - viewfinderSize.getWidth()) / 2;
+        int dy = (scaledPreview.getHeight() - viewfinderSize.getHeight()) / 2;
 
-        return new Rect(-dx, -dy, scaledPreview.width - dx, scaledPreview.height - dy);
+        return new Rect(-dx, -dy, scaledPreview.getWidth() - dx, scaledPreview.getHeight() - dy);
     }
 }

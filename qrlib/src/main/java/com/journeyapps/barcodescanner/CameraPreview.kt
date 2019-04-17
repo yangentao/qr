@@ -18,6 +18,9 @@ import com.journeyapps.barcodescanner.camera.CameraInstance
 import com.journeyapps.barcodescanner.camera.DisplayConfiguration
 import dev.entao.qr.PreviewConfig
 import dev.entao.qr.R
+import dev.entao.qr.camera.RotationCallback
+import dev.entao.qr.camera.RotationListener
+import dev.entao.qr.camera.Size
 import dev.entao.util.Task
 import java.util.*
 
@@ -63,7 +66,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     var isPreviewActive = false
         private set
 
-    private var rotationListener: RotationListener =   RotationListener(context)
+    private var rotationListener: RotationListener = RotationListener(context)
     private var openedOrientation = -1
 
     private val stateListeners = ArrayList<StateListener>()
@@ -455,9 +458,11 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
 
         // To trigger surfaceSized again
         requestLayout()
-        rotationListener.listen( RotationCallback {
-            Task.foreDelay(ROTATION_LISTENER_DELAY_MS.toLong()) {
-                rotationChanged()
+        rotationListener.listen(object : RotationCallback {
+            override fun onRotationChanged(rotation: Int) {
+                Task.foreDelay(ROTATION_LISTENER_DELAY_MS.toLong()) {
+                    rotationChanged()
+                }
             }
         })
     }

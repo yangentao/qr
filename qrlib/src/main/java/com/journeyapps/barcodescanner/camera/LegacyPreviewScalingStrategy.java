@@ -3,7 +3,7 @@ package com.journeyapps.barcodescanner.camera;
 import android.graphics.Rect;
 import android.util.Log;
 
-import com.journeyapps.barcodescanner.Size;
+import dev.entao.qr.camera.Size;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -45,9 +45,9 @@ public class LegacyPreviewScalingStrategy extends PreviewScalingStrategy {
             @Override
             public int compare(Size a, Size b) {
                 Size ascaled = scale(a, desired);
-                int aScale = ascaled.width - a.width;
+                int aScale = ascaled.getWidth() - a.getWidth();
                 Size bscaled = scale(b, desired);
-                int bScale = bscaled.width - b.width;
+                int bScale = bscaled.getWidth() - b.getWidth();
 
                 if (aScale == 0 && bScale == 0) {
                     // Both no scaling, pick the smaller one
@@ -147,9 +147,9 @@ public class LegacyPreviewScalingStrategy extends PreviewScalingStrategy {
         Size scaledPreview = scale(previewSize, viewfinderSize);
         Log.i(TAG, "Preview: " + previewSize + "; Scaled: " + scaledPreview + "; Want: " + viewfinderSize);
 
-        int dx = (scaledPreview.width - viewfinderSize.width) / 2;
-        int dy = (scaledPreview.height - viewfinderSize.height) / 2;
+        int dx = (scaledPreview.getWidth() - viewfinderSize.getWidth()) / 2;
+        int dy = (scaledPreview.getHeight() - viewfinderSize.getHeight()) / 2;
 
-        return new Rect(-dx, -dy, scaledPreview.width - dx, scaledPreview.height - dy);
+        return new Rect(-dx, -dy, scaledPreview.getWidth() - dx, scaledPreview.getHeight() - dy);
     }
 }

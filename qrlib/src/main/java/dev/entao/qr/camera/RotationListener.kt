@@ -1,4 +1,4 @@
-package com.journeyapps.barcodescanner
+package dev.entao.qr.camera
 
 import android.content.Context
 import android.hardware.SensorManager

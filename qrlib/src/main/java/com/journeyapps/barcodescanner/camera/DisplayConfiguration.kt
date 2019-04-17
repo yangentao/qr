@@ -2,7 +2,7 @@ package com.journeyapps.barcodescanner.camera
 
 import android.graphics.Rect
 
-import com.journeyapps.barcodescanner.Size
+import dev.entao.qr.camera.Size
 
 /**
  *

@@ -3,7 +3,7 @@ package com.journeyapps.barcodescanner.camera;
 import android.graphics.Rect;
 import android.util.Log;
 
-import com.journeyapps.barcodescanner.Size;
+import dev.entao.qr.camera.Size;
 
 import java.util.Collections;
 import java.util.Comparator;

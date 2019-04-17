@@ -2,7 +2,7 @@ package com.journeyapps.barcodescanner.camera;
 
 import android.graphics.Rect;
 
-import com.journeyapps.barcodescanner.Size;
+import dev.entao.qr.camera.Size;
 
 /**
  * Scales the size so that it fits exactly. Aspect ratio is NOT preserved.
@@ -33,15 +33,15 @@ public class FitXYStrategy extends PreviewScalingStrategy {
      */
     @Override
     protected float getScore(Size size, Size desired) {
-        if(size.width <= 0 || size.height <= 0) {
+        if(size.getWidth() <= 0 || size.getHeight() <= 0) {
             return 0f;
         }
-        float scaleX = absRatio(size.width * 1.0f / desired.width);
-        float scaleY = absRatio(size.height * 1.0f / desired.height);
+        float scaleX = absRatio(size.getWidth() * 1.0f / desired.getWidth());
+        float scaleY = absRatio(size.getHeight() * 1.0f / desired.getHeight());
 
         float scaleScore = 1.0f / scaleX / scaleY;
 
-        float distortion = absRatio((1.0f * size.width / size.height) / (1.0f * desired.width / desired.height));
+        float distortion = absRatio((1.0f * size.getWidth() / size.getHeight()) / (1.0f * desired.getWidth() / desired.getHeight()));
 
         // Distortion is bad!
         float distortionScore = 1.0f / distortion / distortion / distortion;
@@ -57,6 +57,6 @@ public class FitXYStrategy extends PreviewScalingStrategy {
      * @return a rect placing the preview
      */
     public Rect scalePreview(Size previewSize, Size viewfinderSize) {
-        return new Rect(0, 0, viewfinderSize.width, viewfinderSize.height);
+        return new Rect(0, 0, viewfinderSize.getWidth(), viewfinderSize.getHeight());
     }
 }

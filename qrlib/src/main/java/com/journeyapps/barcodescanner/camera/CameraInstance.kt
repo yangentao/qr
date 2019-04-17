@@ -7,7 +7,7 @@ import android.graphics.SurfaceTexture
 import android.hardware.Camera
 import android.util.Log
 import android.view.Surface
-import com.journeyapps.barcodescanner.Size
+import dev.entao.qr.camera.Size
 import com.journeyapps.barcodescanner.SourceData
 import dev.entao.appbase.App.context
 import dev.entao.qr.camera.AutoFocusManager

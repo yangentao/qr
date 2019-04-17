@@ -15,8 +15,6 @@ import android.os.Handler
 import android.view.Surface
 import android.view.WindowManager
 import com.google.zxing.ResultPoint
-import com.journeyapps.barcodescanner.BarcodeCallback
-import com.journeyapps.barcodescanner.BarcodeResult
 import com.journeyapps.barcodescanner.CameraPreview
 import dev.entao.qr.R
 import dev.entao.qr.ScanConfig

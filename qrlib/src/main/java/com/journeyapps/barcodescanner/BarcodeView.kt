@@ -9,6 +9,9 @@ import com.google.zxing.ResultPointCallback
 import com.journeyapps.barcodescanner.camera.PreviewDataCallback
 import dev.entao.qr.ScanConfig
 import dev.entao.qr.TaskHandler
+import dev.entao.qr.camera.BarcodeCallback
+import dev.entao.qr.camera.BarcodeResult
+import dev.entao.qr.camera.Decoder
 import java.util.*
 
 /**
@@ -105,7 +108,7 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
         val source = sourceData.createSource()
         val rawResult = decoder.decode(source)
         if (rawResult != null) {
-            val r = BarcodeResult(rawResult, sourceData)
+            val r = BarcodeResult(rawResult)
             callback?.barcodeResult(r)
             stopDecoding()
             return
