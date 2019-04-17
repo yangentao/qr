@@ -14,9 +14,11 @@ import android.util.Log
 import android.view.TextureView
 import android.view.ViewGroup
 import android.view.WindowManager
-import com.journeyapps.barcodescanner.camera.*
+import com.journeyapps.barcodescanner.camera.CameraInstance
+import com.journeyapps.barcodescanner.camera.DisplayConfiguration
 import dev.entao.qr.PreviewConfig
 import dev.entao.qr.R
+import dev.entao.util.Task
 import java.util.*
 
 /**
@@ -50,9 +52,6 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     var cameraInstance: CameraInstance? = null
         private set
 
-
-    private var stateHandler: Handler
-
     private var textureView: TextureView? = null
 
     /**
@@ -64,7 +63,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     var isPreviewActive = false
         private set
 
-    private var rotationListener: RotationListener? = null
+    private var rotationListener: RotationListener =   RotationListener(context)
     private var openedOrientation = -1
 
     private val stateListeners = ArrayList<StateListener>()
@@ -133,37 +132,11 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
             field = marginFraction
         }
 
-    /**
-     * Override this to specify a different preview scaling strategy.
-     */
-    /**
-     * Override the preview scaling strategy.
-     *
-     * @param previewScalingStrategy null for the default
-     */
-    // If we are using SurfaceTexture, it is safe to use centerCrop.
-    // For SurfaceView, it's better to use fitCenter, otherwise the preview may overlap to
-    // other views.
-    var previewScalingStrategy: PreviewScalingStrategy? = null
-        get() {
-            if (field != null) {
-                return field
-            }
-            return if (textureView != null) {
-                CenterCropStrategy()
-            } else {
-                FitCenterStrategy()
-            }
-
-        }
 
     private var torchOn = false
 
     private val stateCallback = Handler.Callback { message ->
-        if (message.what == R.id.zxing_prewiew_size_ready) {
-            previewSized(message.obj as Size)
-            return@Callback true
-        } else if (message.what == R.id.zxing_camera_error) {
+        if (message.what == R.id.zxing_camera_error) {
             val error = message.obj as Exception
 
             if (isActive) {
@@ -264,14 +237,8 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     init {
         setBackgroundColor(Color.BLACK)
         initializeAttributes()
-        stateHandler = Handler(stateCallback)
-        rotationListener = RotationListener()
     }
 
-    private val rotationCallback = RotationCallback {
-        // Make sure this is run on the main thread.
-        stateHandler.postDelayed({ rotationChanged() }, ROTATION_LISTENER_DELAY_MS.toLong())
-    }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
@@ -290,16 +257,6 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
 
         if (framingRectWidth > 0 && framingRectHeight > 0) {
             this.framingRectSize = Size(framingRectWidth, framingRectHeight)
-        }
-
-        // See zxing_attrs.xml for the enum values
-        val scalingStrategyNumber = PreviewConfig.strategy
-        if (scalingStrategyNumber == 1) {
-            this.previewScalingStrategy = CenterCropStrategy()
-        } else if (scalingStrategyNumber == 2) {
-            this.previewScalingStrategy = FitCenterStrategy()
-        } else if (scalingStrategyNumber == 3) {
-            this.previewScalingStrategy = FitXYStrategy()
         }
     }
 
@@ -335,14 +292,15 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
             surfaceRect = null
             throw IllegalStateException("containerSize or previewSize is not set yet")
         }
+        val preSize = previewSize ?: return
 
-        val previewWidth = previewSize!!.width
-        val previewHeight = previewSize!!.height
+        val previewWidth = preSize.width
+        val previewHeight = preSize.height
 
         val width = containerSize!!.width
         val height = containerSize!!.height
 
-        surfaceRect = displayConfiguration!!.scalePreview(previewSize)
+        surfaceRect = displayConfiguration!!.scalePreview(preSize)
 
         val container = Rect(0, 0, width, height)
         framingRect = calculateFramingRect(container, surfaceRect)
@@ -380,7 +338,6 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
         val ci = cameraInstance ?: return
         if (ci.displayConfiguration == null) {
             displayConfiguration = DisplayConfiguration(displayRotation, containerSize)
-            displayConfiguration!!.previewScalingStrategy = previewScalingStrategy
             ci.displayConfiguration = displayConfiguration
             ci.configureCamera()
             if (torchOn) {
@@ -475,7 +432,9 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
             Log.w(TAG, "initCamera called twice")
             return
         }
-        cameraInstance = CameraInstance(context, stateHandler)
+        cameraInstance = CameraInstance(context) {
+            previewSized(it)
+        }
         cameraInstance?.open()
 
         // Keep track of the orientation we opened at, so that we don't reopen the camera if we
@@ -496,7 +455,11 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
 
         // To trigger surfaceSized again
         requestLayout()
-        rotationListener!!.listen(context, rotationCallback)
+        rotationListener.listen( RotationCallback {
+            Task.foreDelay(ROTATION_LISTENER_DELAY_MS.toLong()) {
+                rotationChanged()
+            }
+        })
     }
 
     open fun pause() {
@@ -512,7 +475,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
         this.containerSize = null
         this.previewSize = null
         this.previewFramingRect = null
-        rotationListener!!.stop()
+        rotationListener.stop()
 
         fireState.previewStopped()
     }
@@ -552,7 +515,7 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
     protected fun calculateFramingRect(container: Rect, surface: Rect?): Rect {
         // intersection is the part of the container that is used for the preview
         val intersection = Rect(container)
-        val intersects = intersection.intersect(surface)
+        intersection.intersect(surface)
 
         if (framingRectSize != null) {
             // Specific size is specified. Make sure it's not larger than the container or surface.
@@ -597,6 +560,6 @@ open class CameraPreview(context: Context) : ViewGroup(context) {
 
         // Delay after rotation change is detected before we reorientate ourselves.
         // This is to avoid double-reinitialization when the Activity is destroyed and recreated.
-        private val ROTATION_LISTENER_DELAY_MS = 250
+        private const val ROTATION_LISTENER_DELAY_MS = 250
     }
 }

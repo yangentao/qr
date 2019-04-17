@@ -5,12 +5,6 @@ package dev.entao.qr;
  */
 
 public class PreviewConfig {
-	public static final int CENTER_CROP = 1;
-	public static final int FIT_CENTER = 2;
-	public static final int FIT_XY = 3;
-
-	public static int strategy = CENTER_CROP;
-	public static boolean userTextureView = true;
 	public static int width = -1;//200;
 	public static int height = -1;//200;
 }

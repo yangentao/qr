@@ -6,7 +6,7 @@ import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
-import com.journeyapps.barcodescanner.camera.PreviewCallback
+import com.journeyapps.barcodescanner.camera.PreviewDataCallback
 import dev.entao.qr.ScanConfig
 import dev.entao.qr.TaskHandler
 import java.util.*
@@ -24,7 +24,7 @@ import java.util.*
  *
  * @see CameraPreview for more details on the preview lifecycle.
  */
-class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallback {
+class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallback, PreviewDataCallback {
 
     private var callback: BarcodeCallback? = null
     private val decoding: Boolean get() = callback != null
@@ -79,19 +79,16 @@ class BarcodeView(context: Context) : CameraPreview(context), ResultPointCallbac
         taskHandler = null
     }
 
+    override fun onPreview(sourceData: SourceData) {
+        taskHandler?.post {
+            decode(sourceData)
+        }
+    }
 
     private fun requestNextPreview() {
         val ci = cameraInstance ?: return
         if (ci.isOpen) {
-            ci.requestPreview(object : PreviewCallback {
-                override fun onPreview(sourceData: SourceData) {
-                    taskHandler?.post {
-                        decode(sourceData)
-                    }
-                }
-
-            })
-
+            ci.requestPreview(this)
         }
     }
 

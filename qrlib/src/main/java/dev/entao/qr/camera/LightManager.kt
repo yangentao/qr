@@ -22,10 +22,10 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Handler
-import com.journeyapps.barcodescanner.camera.CameraManager
+import com.journeyapps.barcodescanner.camera.CameraInstance
 
 
-class LightManager(private val context: Context, private val cameraManager: CameraManager) : SensorEventListener {
+class LightManager(private val context: Context, private val cameraManager: CameraInstance) : SensorEventListener {
     private val handler: Handler = Handler()
     private var lightSensor: Sensor? = null
 

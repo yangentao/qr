@@ -1,102 +1,277 @@
+@file:Suppress("DEPRECATION")
+
 package com.journeyapps.barcodescanner.camera
 
 import android.content.Context
 import android.graphics.SurfaceTexture
-import android.os.Handler
+import android.hardware.Camera
+import android.util.Log
+import android.view.Surface
 import com.journeyapps.barcodescanner.Size
-import com.journeyapps.barcodescanner.Util
-import dev.entao.qr.R
-import dev.entao.qr.camera.CameraThread
+import com.journeyapps.barcodescanner.SourceData
+import dev.entao.appbase.App.context
+import dev.entao.qr.camera.AutoFocusManager
+import dev.entao.qr.camera.CameraSettings
+import dev.entao.qr.camera.ConfigUtil
+import dev.entao.qr.camera.LightManager
+import java.util.*
 
 
 /**
- * 在主线程
+ * Wrapper to manage the Camera. This is not thread-safe, and the methods must always be called
+ * from the same thread.
+ * Call order:
+ * 1. setCameraSettings()
+ * 2. open(), set desired preview size (any order)
+ * 3. configure(), setPreviewDisplay(holder) (any order)
+ * 4. startPreview()
+ * 5. requestPreviewFrame (repeat)
+ * 6. stopPreview()
+ * 7. close()
  */
-class CameraInstance(context: Context, val readyHandler: Handler?) {
+class CameraInstance(context: Context, val onReady: (Size) -> Unit) : Camera.PreviewCallback {
 
-    private val cameraManager: CameraManager = CameraManager(context)
+
+    private var camera: Camera? = null
+
+    val isOpen: Boolean get() = camera != null
+
+    private var cameraInfo: Camera.CameraInfo? = null
+
+    private var focusManager: AutoFocusManager? = null
+    private var lightManager: LightManager? = null
+
+    private var previewing: Boolean = false
+
+
     var displayConfiguration: DisplayConfiguration? = null
-        set(configuration) {
-            field = configuration
-            cameraManager.displayConfiguration = configuration
-        }
-    var isOpen = false
+
+    // Actual chosen preview size
+    private var requestedPreviewSize: Size? = null
+    /**
+     * Actual preview size in *natural camera* orientation. null if not determined yet.
+     *
+     * @return preview size
+     */
+    var naturalPreviewSize: Size? = null
         private set
 
-    private val previewSize: Size?
-        get() = cameraManager.previewSize
+    /**
+     * @return the camera rotation relative to display rotation, in degrees. Typically 0 if the
+     * display is in landscape orientation.
+     */
+    var cameraRotation = -1
+        private set    // camera rotation vs display rotation
+
+
+    /**
+     * @return true if the camera rotation is perpendicular to the current display rotation.
+     */
+    val isCameraRotated: Boolean
+        get() {
+            if (cameraRotation == -1) {
+                throw IllegalStateException("Rotation not calculated yet. Call configure() first.")
+            }
+            return cameraRotation % 180 != 0
+        }
+
+
+    /**
+     * Actual preview size in *current display* rotation. null if not determined yet.
+     *
+     * @return preview size
+     */
+    val previewSize: Size?
+        get() = when {
+            naturalPreviewSize == null -> null
+            this.isCameraRotated -> naturalPreviewSize!!.rotate()
+            else -> naturalPreviewSize
+        }
+
+    val isTorchOn: Boolean
+        get() {
+            val parameters = camera!!.parameters
+            if (parameters != null) {
+                val flashMode = parameters.flashMode
+                return flashMode != null && (Camera.Parameters.FLASH_MODE_ON == flashMode || Camera.Parameters.FLASH_MODE_TORCH == flashMode)
+            } else {
+                return false
+            }
+        }
+
+    private var resolution: Size? = null
+    private var callback: PreviewDataCallback? = null
+
+    override fun onPreviewFrame(data: ByteArray, camera: Camera) {
+        val sz = resolution ?: return
+        val cb = this.callback ?: return
+        val format = camera.parameters.previewFormat
+        val source = SourceData(data, sz.width, sz.height, format, cameraRotation)
+        cb.onPreview(source)
+    }
 
     fun open() {
-        isOpen = true
-        CameraThread.push {
-            try {
-                cameraManager.open()
-            } catch (e: Exception) {
-                notifyError(e)
+        for (i in 0 until Camera.getNumberOfCameras()) {
+            val info = Camera.CameraInfo()
+            Camera.getCameraInfo(i, info)
+            if (info.facing == Camera.CameraInfo.CAMERA_FACING_BACK) {
+                camera = Camera.open(i)
+                this.cameraInfo = info
+                return
             }
         }
     }
 
     fun configureCamera() {
-        Util.validateMainThread()
-        validateOpen()
-        CameraThread.enqueue {
+        try {
+            this.cameraRotation = calculateDisplayRotation()
+            setCameraDisplayOrientation(cameraRotation)
+        } catch (e: Exception) {
+            Log.w("Camera", "Failed to set rotation.")
+        }
+
+        try {
+            setDesiredParameters(false)
+        } catch (e: Exception) {
             try {
-                cameraManager.configure()
-                readyHandler?.obtainMessage(R.id.zxing_prewiew_size_ready, previewSize)?.sendToTarget()
-            } catch (e: Exception) {
-                notifyError(e)
+                setDesiredParameters(true)
+            } catch (e2: Exception) {
             }
         }
+
+        val realPreviewSize = camera!!.parameters.previewSize
+        naturalPreviewSize = if (realPreviewSize == null) {
+            requestedPreviewSize
+        } else {
+            Size(realPreviewSize.width, realPreviewSize.height)
+        }
+        this.resolution = naturalPreviewSize
+
+        onReady(previewSize!!)
     }
 
     fun startPreview(texure: SurfaceTexture) {
-        Util.validateMainThread()
-        validateOpen()
-
-        CameraThread.enqueue {
-            try {
-                cameraManager.startPreview(texure)
-            } catch (e: Exception) {
-                notifyError(e)
+        val theCamera = camera ?: return
+        theCamera.setPreviewTexture(texure)
+        if (!previewing) {
+            theCamera.startPreview()
+            previewing = true
+            focusManager = AutoFocusManager(theCamera)
+            if (CameraSettings.isAutoTorchEnabled) {
+                lightManager = LightManager(context, this)
+                lightManager?.start()
             }
         }
+
     }
 
     fun setTorch(on: Boolean) {
-        if (isOpen) {
-            CameraThread.enqueue { cameraManager.setTorch(on) }
+        val ca = this.camera ?: return
+        val isOn = isTorchOn
+        if (on != isOn) {
+            focusManager?.stop()
+
+            val parameters = ca.parameters
+            ConfigUtil.setTorch(parameters, on)
+            if (CameraSettings.isExposureEnabled) {
+                ConfigUtil.setBestExposure(parameters, on)
+            }
+            ca.parameters = parameters
+            focusManager?.start()
         }
     }
 
     fun close() {
         if (isOpen) {
-            CameraThread.enqueue {
-                try {
-                    cameraManager.stopPreview()
-                    cameraManager.close()
-                } catch (e: Exception) {
-                }
-                CameraThread.pop()
+            focusManager?.stop()
+            focusManager = null
+            lightManager?.stop()
+            lightManager = null
+            if (previewing) {
+                camera?.stopPreview()
+                this.callback = null
+                previewing = false
+            }
+            camera?.release()
+            camera = null
+        }
+    }
+
+    fun requestPreview(callback: PreviewDataCallback) {
+        val theCamera = camera ?: return
+        if (previewing) {
+            this.callback = callback
+            theCamera.setOneShotPreviewCallback(this)
+        }
+    }
+
+
+    private fun setDesiredParameters(safeMode: Boolean) {
+        val parameters = camera!!.parameters
+        ConfigUtil.setFocus(parameters)
+        ConfigUtil.setBarcodeSceneMode(parameters)
+
+        if (!safeMode) {
+            ConfigUtil.setTorch(parameters, false)
+            ConfigUtil.setVideoStabilization(parameters)
+            ConfigUtil.setFocusArea(parameters)
+            ConfigUtil.setMetering(parameters)
+        }
+
+        val previewSizes = getPreviewSizes(parameters)
+        if (previewSizes.isEmpty()) {
+            requestedPreviewSize = null
+        } else {
+            requestedPreviewSize = displayConfiguration!!.getBestPreviewSize(previewSizes, isCameraRotated)
+
+            parameters.setPreviewSize(requestedPreviewSize!!.width, requestedPreviewSize!!.height)
+        }
+
+
+
+        camera!!.parameters = parameters
+    }
+
+
+    private fun calculateDisplayRotation(): Int {
+        // http://developer.android.com/reference/android/hardware/Camera.html#setDisplayOrientation(int)
+        val rotation = displayConfiguration!!.rotation
+        var degrees = 0
+        when (rotation) {
+            Surface.ROTATION_0 -> degrees = 0
+            Surface.ROTATION_90 -> degrees = 90
+            Surface.ROTATION_180 -> degrees = 180
+            Surface.ROTATION_270 -> degrees = 270
+        }
+
+        var result: Int
+        if (cameraInfo!!.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+            result = (cameraInfo!!.orientation + degrees) % 360
+            result = (360 - result) % 360  // compensate the mirror
+        } else {  // back-facing
+            result = (cameraInfo!!.orientation - degrees + 360) % 360
+        }
+        Log.i("Camera", "Camera Display Orientation: $result")
+        return result
+    }
+
+    private fun setCameraDisplayOrientation(rotation: Int) {
+        camera!!.setDisplayOrientation(rotation)
+    }
+
+
+    private fun getPreviewSizes(parameters: Camera.Parameters): List<Size> {
+        val supportedSizes = parameters.supportedPreviewSizes
+        val ls = ArrayList<Size>()
+        if (supportedSizes == null) {
+            val sz = parameters.previewSize ?: return ls
+            ls.add(Size(sz.width, sz.height))
+        } else {
+            for (size in supportedSizes) {
+                ls.add(Size(size.width, size.height))
             }
         }
-        isOpen = false
-    }
-
-    fun requestPreview(callback: PreviewCallback) {
-        validateOpen()
-
-        CameraThread.enqueue { cameraManager.requestPreviewFrame(callback) }
-    }
-
-    private fun validateOpen() {
-        if (!isOpen) {
-            throw IllegalStateException("CameraInstance is not open")
-        }
-    }
-
-    private fun notifyError(error: Exception) {
-        readyHandler?.obtainMessage(R.id.zxing_camera_error, error)?.sendToTarget()
+        return ls
     }
 
 }
