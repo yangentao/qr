@@ -4,8 +4,8 @@ buildscript {
     ext.kotlin_version = '1.3.21'
     repositories {
         google()
-        mavenCentral()
         jcenter()
+        mavenCentral()
 
     }
     dependencies {
@@ -17,12 +17,13 @@ buildscript {
 
 allprojects {
     repositories {
+
+        google()
+        jcenter()
+        mavenCentral()
         maven {
             url 'http://app800.cn/maven/repository/public/'
         }
-        google()
-        mavenCentral()
-        jcenter()
     }
 
 

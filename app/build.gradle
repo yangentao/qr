@@ -3,6 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 
 android {
+
     compileSdkVersion 27
     defaultConfig {
         applicationId "dev.entao.QRApp"
@@ -11,10 +12,32 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
+    signingConfigs {
+        debug {
+            storeFile file('yet.key')
+            storePassword 'yetyet'
+            keyAlias = 'yet'
+            keyPassword 'yetyet'
+        }
+        release {
+            storeFile file('yet.key')
+            storePassword 'yetyet'
+            keyAlias = 'yet'
+            keyPassword 'yetyet'
+        }
+    }
+
     buildTypes {
+        debug {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.debug
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
     compileOptions {
@@ -37,8 +60,8 @@ dependencies {
     implementation 'dev.entao:log:2.0.1'
     implementation 'dev.entao:json:2.0.1'
     implementation 'dev.entao:http:2.0.1'
-    implementation 'dev.entao:appbase:2.0.1.2711'
-    implementation 'dev.entao:ui:2.0.3.2711'
+    implementation 'dev.entao:appbase:2.0.3.2711.1330'
+    implementation 'dev.entao:ui:2.0.5.2711'
 
     implementation project(':qrlib')
 }
