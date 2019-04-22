@@ -127,15 +127,15 @@ class CameraInstance(context: Context, val textureView: TextureView, val surface
     private fun find720(ps: Camera.Parameters): Size {
         val ls = ps.supportedPreviewSizes
         val sz = ls.firstOrNull {
-            it.height == 720
-        } ?: ls.firstOrNull {
-            it.height == 960
-        } ?: ls.firstOrNull {
             it.height == 1080 && it.width == 1440
         } ?: ls.firstOrNull {
             it.height == 1080 && it.width == 1920
         } ?: ls.firstOrNull {
             it.height == 1080
+        } ?: ls.firstOrNull {
+            it.height == 720
+        } ?: ls.firstOrNull {
+            it.height == 960
         } ?: ls.filter { it.height >= 720 }.minBy { it.height } ?: ls.firstOrNull {
             it.height == 480 && it.width == 800
         } ?: ls.firstOrNull {
