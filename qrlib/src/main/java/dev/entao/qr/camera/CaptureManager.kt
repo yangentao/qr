@@ -15,9 +15,9 @@ import android.os.Handler
 import android.view.Surface
 import android.view.WindowManager
 import com.google.zxing.ResultPoint
+import dev.entao.appbase.Task
 import dev.entao.qr.QRConfig
 import dev.entao.qr.R
-import dev.entao.util.Task
 
 /**
  * Manages barcode scanning for a CaptureActivity. This class may be used to have a custom Activity
