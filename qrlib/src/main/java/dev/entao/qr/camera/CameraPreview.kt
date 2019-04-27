@@ -2,6 +2,7 @@
 
 package dev.entao.qr.camera
 
+import android.Manifest
 import android.content.Context
 import android.graphics.Color
 import android.graphics.Rect
@@ -18,6 +19,7 @@ import dev.entao.qr.QRConfig
 import dev.entao.qr.TaskHandler
 import dev.entao.ui.ext.FParam
 import dev.entao.ui.ext.Fill
+import dev.entao.util.app.hasPerm
 import java.util.*
 
 /**
@@ -175,23 +177,34 @@ class CameraPreview(context: Context) : FrameLayout(context), TextureView.Surfac
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
     }
 
-    private fun startCamera(surface: SurfaceTexture, width: Int, height: Int) {
-        cameraInstance = CameraInstance(context, this.textureView, surface, Size(width, height))
-        cameraInstance?.previewCallback = this
-        containerSized(Size(width, height))
+    fun onResume() {
+        if (cameraInstance == null && textureView.isAvailable) {
+            startCamera(textureView.surfaceTexture, textureView.width, textureView.height)
+        }
+    }
 
-        rotationListener.listen(object : RotationCallback {
-            override fun onRotationChanged(rotation: Int) {
-                Task.foreDelay(250.toLong()) {
-                    if (isActive) {
-                        stopCamera()
-                        if (this@CameraPreview.textureView.isAvailable) {
-                            startCamera(textureView.surfaceTexture, textureView.width, textureView.height)
+    private fun startCamera(surface: SurfaceTexture, width: Int, height: Int) {
+        if (cameraInstance != null) {
+            return
+        }
+        if (context.hasPerm(Manifest.permission.CAMERA)) {
+            cameraInstance = CameraInstance(context, this.textureView, surface, Size(width, height))
+            cameraInstance?.previewCallback = this
+            containerSized(Size(width, height))
+
+            rotationListener.listen(object : RotationCallback {
+                override fun onRotationChanged(rotation: Int) {
+                    Task.foreDelay(250.toLong()) {
+                        if (isActive) {
+                            stopCamera()
+                            if (this@CameraPreview.textureView.isAvailable) {
+                                startCamera(textureView.surfaceTexture, textureView.width, textureView.height)
+                            }
                         }
                     }
                 }
-            }
-        })
+            })
+        }
     }
 
     private fun stopCamera() {

@@ -14,7 +14,7 @@ android {
         minSdkVersion 16
         targetSdkVersion 27
         versionCode 1
-        versionName "2.0.2.2711"
+        versionName "2.0.3"
     }
     buildTypes {
         release {
@@ -38,7 +38,7 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'com.google.zxing:core:3.3.3'
-    implementation 'dev.entao:ui:2.0.12.2711.1330'
+    implementation 'dev.entao:ui:2.0.16'
 }
 
 

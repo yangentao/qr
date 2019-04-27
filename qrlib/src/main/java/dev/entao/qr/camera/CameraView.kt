@@ -41,7 +41,9 @@ class CameraView(context: Context) : FrameLayout(context) {
     }
 
 
+
     fun onResume() {
+        barcodeView.onResume()
     }
 
 
