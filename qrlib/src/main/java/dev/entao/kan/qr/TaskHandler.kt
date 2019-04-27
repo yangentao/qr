@@ -1,4 +1,4 @@
-package dev.entao.qr
+package dev.entao.kan.qr
 
 import android.os.Handler
 import android.os.HandlerThread

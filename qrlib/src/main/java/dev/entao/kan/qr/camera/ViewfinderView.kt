@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -24,8 +24,9 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.view.View
 import com.google.zxing.ResultPoint
-import dev.entao.appbase.App
-import dev.entao.qr.QRConfig
+import dev.entao.kan.appbase.App
+import dev.entao.kan.appbase.ex.dp
+import dev.entao.kan.qr.QRConfig
 import java.util.*
 
 
@@ -51,7 +52,7 @@ class ViewfinderView(context: Context) : View(context) {
     private var framingRect: Rect? = null
     private var previewFramingRect: Rect? = null
 
-    private val cw = App.dp2px(25)
+    private val cw =  25.dp // App.dp2px(25)
     private val ch = App.dp2px(5)
     private val cm = -App.dp2px(5)
 

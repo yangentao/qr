@@ -3,15 +3,16 @@ package dev.entao.utilapp
 import android.content.Context
 import android.widget.EditText
 import android.widget.LinearLayout
-import dev.entao.appbase.App
-import dev.entao.log.logd
-import dev.entao.qr.QRPage
-import dev.entao.ui.base.openActivity
-import dev.entao.ui.base.pushPage
-import dev.entao.ui.creator.buttonGreenRound
-import dev.entao.ui.creator.edit
-import dev.entao.ui.ext.*
-import dev.entao.ui.page.TitlePage
+import dev.entao.kan.appbase.App
+import dev.entao.kan.base.openActivity
+import dev.entao.kan.base.pushPage
+import dev.entao.kan.creator.buttonGreenRound
+import dev.entao.kan.creator.edit
+import dev.entao.kan.ext.*
+import dev.entao.kan.log.logd
+import dev.entao.kan.page.TitlePage
+import dev.entao.kan.qr.QRPage
+
 
 class MainPage : TitlePage() {
 
@@ -30,7 +31,7 @@ class MainPage : TitlePage() {
                 pushPage(p)
             }
             rightText("Open").onClick = {
-                openActivity(TestActivity::class)
+                openActivity(TestActivity::class){}
             }
         }
 

@@ -1,7 +1,7 @@
 package dev.entao.utilapp
 
 import android.os.Bundle
-import dev.entao.ui.base.ContainerActivity
+import dev.entao.kan.base.ContainerActivity
 
 class MainActivity : ContainerActivity() {
 

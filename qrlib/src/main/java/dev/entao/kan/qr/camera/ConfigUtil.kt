@@ -16,7 +16,7 @@
 
 @file:Suppress("unused", "DEPRECATION")
 
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.graphics.Rect
 import android.hardware.Camera

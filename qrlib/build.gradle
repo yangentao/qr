@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'kotlin-android-extensions'
 apply plugin: 'com.github.dcendents.android-maven'
 
-group = 'dev.entao'
+group = 'dev.entao.kan'
 
 android {
     compileSdkVersion 27
@@ -14,7 +14,7 @@ android {
         minSdkVersion 16
         targetSdkVersion 27
         versionCode 1
-        versionName "2.0.3"
+        versionName "3.0.0"
     }
     buildTypes {
         release {
@@ -38,9 +38,8 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'com.google.zxing:core:3.3.3'
-    implementation 'dev.entao:ui:2.0.16'
+    implementation 'dev.entao.kan:ui:3.0.0'
 }
-
 
 
 task androidSourcesJar(type: Jar) {

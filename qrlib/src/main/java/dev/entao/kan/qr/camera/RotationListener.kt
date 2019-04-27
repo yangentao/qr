@@ -1,4 +1,4 @@
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.content.Context
 import android.hardware.SensorManager

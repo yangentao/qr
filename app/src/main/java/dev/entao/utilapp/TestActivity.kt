@@ -1,10 +1,10 @@
 package dev.entao.utilapp
 
 import android.widget.LinearLayout
-import dev.entao.log.logd
-import dev.entao.qr.camera.RotationCallback
-import dev.entao.qr.camera.RotationListener
-import dev.entao.ui.base.TitledActivity
+import dev.entao.kan.base.TitledActivity
+import dev.entao.kan.log.logd
+import dev.entao.kan.qr.camera.RotationCallback
+import dev.entao.kan.qr.camera.RotationListener
 
 class TestActivity : TitledActivity() {
     lateinit  var rl:RotationListener

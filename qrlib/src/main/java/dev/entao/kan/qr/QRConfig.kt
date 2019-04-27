@@ -1,8 +1,8 @@
-package dev.entao.qr
+package dev.entao.kan.qr
 
 import com.google.zxing.BarcodeFormat
-import dev.entao.appbase.ex.color
-import dev.entao.appbase.ex.dp
+import dev.entao.kan.appbase.ex.color
+import dev.entao.kan.appbase.ex.dp
 
 /**
  * Created by entaoyang@163.com on 2016-10-29.

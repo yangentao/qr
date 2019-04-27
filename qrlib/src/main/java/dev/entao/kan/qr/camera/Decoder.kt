@@ -1,4 +1,4 @@
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import com.google.zxing.*
 import com.google.zxing.common.HybridBinarizer

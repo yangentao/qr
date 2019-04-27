@@ -1,7 +1,6 @@
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import com.google.zxing.ResultPoint
-import dev.entao.qr.camera.BarcodeResult
 
 interface BarcodeCallback {
 

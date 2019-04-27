@@ -1,4 +1,4 @@
-package dev.entao.qr
+package dev.entao.kan.qr
 
 import android.graphics.Bitmap
 import android.graphics.Color
@@ -6,8 +6,8 @@ import com.google.zxing.*
 import com.google.zxing.common.BitMatrix
 import com.google.zxing.common.HybridBinarizer
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
-import dev.entao.appbase.ex.saveJpg
-import dev.entao.appbase.ex.savePng
+import dev.entao.kan.appbase.ex.saveJpg
+import dev.entao.kan.appbase.ex.savePng
 import java.io.File
 
 

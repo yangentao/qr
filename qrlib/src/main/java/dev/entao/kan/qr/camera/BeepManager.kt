@@ -16,14 +16,14 @@
 
 @file:Suppress("PrivatePropertyName", "DEPRECATION")
 
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.app.Activity
 import android.content.Context
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.os.Vibrator
-import dev.entao.qr.R
+import dev.entao.kan.qr.R
 import java.io.Closeable
 import java.io.IOException
 

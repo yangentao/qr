@@ -16,7 +16,7 @@
 
 @file:Suppress("PrivatePropertyName")
 
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.content.BroadcastReceiver
 import android.content.Context

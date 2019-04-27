@@ -1,6 +1,6 @@
 @file:Suppress("UNUSED_PARAMETER")
 
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.Manifest
 import android.annotation.TargetApi
@@ -15,9 +15,9 @@ import android.os.Handler
 import android.view.Surface
 import android.view.WindowManager
 import com.google.zxing.ResultPoint
-import dev.entao.appbase.Task
-import dev.entao.qr.QRConfig
-import dev.entao.qr.R
+import dev.entao.kan.appbase.Task
+import dev.entao.kan.qr.QRConfig
+import dev.entao.kan.qr.R
 
 /**
  * Manages barcode scanning for a CaptureActivity. This class may be used to have a custom Activity

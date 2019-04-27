@@ -1,4 +1,4 @@
-package dev.entao.qr
+package dev.entao.kan.qr
 
 import android.content.Context
 import android.graphics.Color
@@ -8,20 +8,21 @@ import android.util.Log
 import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.TextView
-import dev.entao.appbase.ex.ImageStated
-import dev.entao.appbase.ex.sized
-import dev.entao.log.logd
-import dev.entao.qr.camera.BarcodeResult
-import dev.entao.qr.camera.CameraView
-import dev.entao.qr.camera.CaptureManager
-import dev.entao.ui.base.act
-import dev.entao.ui.base.popPage
-import dev.entao.ui.creator.createLinearHorizontal
-import dev.entao.ui.creator.createTextViewC
-import dev.entao.ui.dialogs.showInput
-import dev.entao.ui.ext.*
-import dev.entao.ui.page.PageClass
-import dev.entao.ui.page.TitlePage
+import dev.entao.kan.appbase.ex.ImageStated
+import dev.entao.kan.appbase.ex.sized
+import dev.entao.kan.base.act
+import dev.entao.kan.base.popPage
+import dev.entao.kan.creator.createLinearHorizontal
+import dev.entao.kan.creator.createTextViewC
+import dev.entao.kan.dialogs.showInput
+import dev.entao.kan.ext.*
+import dev.entao.kan.log.logd
+import dev.entao.kan.page.PageClass
+import dev.entao.kan.page.TitlePage
+import dev.entao.kan.qr.camera.BarcodeResult
+import dev.entao.kan.qr.camera.CameraView
+import dev.entao.kan.qr.camera.CaptureManager
+
 
 
 /**

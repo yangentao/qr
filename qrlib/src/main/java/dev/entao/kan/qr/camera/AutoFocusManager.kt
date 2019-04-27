@@ -16,12 +16,12 @@
 
 @file:Suppress("PrivatePropertyName", "DEPRECATION")
 
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.hardware.Camera
 import android.os.Handler
 import android.os.Looper
-import dev.entao.log.loge
+import dev.entao.kan.log.loge
 
 class AutoFocusManager(private val camera: Camera) {
     private val INTERVAL_MS = 2000L

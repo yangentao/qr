@@ -1,4 +1,4 @@
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.content.Context
 import android.graphics.Color
@@ -6,9 +6,9 @@ import android.view.KeyEvent
 import android.widget.FrameLayout
 import android.widget.TextView
 import com.google.zxing.ResultPoint
-import dev.entao.qr.QRConfig
-import dev.entao.ui.creator.createTextViewB
-import dev.entao.ui.ext.*
+import dev.entao.kan.creator.createTextViewB
+import dev.entao.kan.ext.*
+import dev.entao.kan.qr.QRConfig
 
 
 /**

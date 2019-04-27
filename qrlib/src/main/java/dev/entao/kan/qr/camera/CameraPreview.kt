@@ -1,6 +1,6 @@
 @file:Suppress("MemberVisibilityCanBePrivate")
 
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.Manifest
 import android.content.Context
@@ -13,13 +13,13 @@ import com.google.zxing.DecodeHintType
 import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
-import dev.entao.appbase.Task
-import dev.entao.log.logd
-import dev.entao.qr.QRConfig
-import dev.entao.qr.TaskHandler
-import dev.entao.ui.ext.FParam
-import dev.entao.ui.ext.Fill
-import dev.entao.util.app.hasPerm
+import dev.entao.kan.appbase.Task
+import dev.entao.kan.ext.FParam
+import dev.entao.kan.ext.Fill
+import dev.entao.kan.log.logd
+import dev.entao.kan.util.app.hasPerm
+import dev.entao.kan.qr.QRConfig
+import dev.entao.kan.qr.TaskHandler
 import java.util.*
 
 /**

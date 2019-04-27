@@ -1,8 +1,9 @@
 package dev.entao.utilapp
 
-import dev.entao.log.logd
-import dev.entao.ui.widget.TitleBar
-import dev.entao.util.app.YetApp
+import dev.entao.kan.log.logd
+import dev.entao.kan.util.app.YetApp
+import dev.entao.kan.widget.TitleBar
+
 
 class MyApp : YetApp() {
 

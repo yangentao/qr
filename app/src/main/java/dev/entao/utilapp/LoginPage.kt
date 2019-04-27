@@ -2,10 +2,14 @@ package dev.entao.utilapp
 
 import android.content.Context
 import android.widget.LinearLayout
-import dev.entao.ui.creator.textView
-import dev.entao.ui.dialogs.alert
-import dev.entao.ui.ext.*
-import dev.entao.ui.page.TitlePage
+import dev.entao.kan.creator.textView
+import dev.entao.kan.dialogs.alert
+import dev.entao.kan.ext.*
+import dev.entao.kan.ext.WidthFill
+import dev.entao.kan.ext.gravityCenter
+import dev.entao.kan.ext.textColorRed
+import dev.entao.kan.page.TitlePage
+
 
 class LoginPage : TitlePage() {
 

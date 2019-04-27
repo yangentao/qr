@@ -1,6 +1,6 @@
 @file:Suppress("DEPRECATION", "MemberVisibilityCanBePrivate", "UNUSED_PARAMETER")
 
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.content.Context
 import android.graphics.Matrix
@@ -9,8 +9,8 @@ import android.hardware.Camera
 import android.view.Surface
 import android.view.TextureView
 import android.view.WindowManager
-import dev.entao.appbase.App.context
-import dev.entao.qr.QRConfig
+import dev.entao.kan.appbase.App.context
+import dev.entao.kan.qr.QRConfig
 
 
 /**

@@ -1,4 +1,4 @@
-package dev.entao.qr.camera
+package dev.entao.kan.qr.camera
 
 import android.os.Handler
 import android.os.HandlerThread

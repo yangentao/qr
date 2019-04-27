@@ -57,11 +57,11 @@ dependencies {
     implementation 'com.android.support:appcompat-v7:27.1.1'
     implementation 'com.android.support.constraint:constraint-layout:1.1.3'
 
-    implementation 'dev.entao:log:2.0.1'
-    implementation 'dev.entao:json:2.0.1'
-    implementation 'dev.entao:http:2.0.1'
-    implementation 'dev.entao:appbase:2.0.3.2711.1330'
-    implementation 'dev.entao:ui:2.0.5.2711'
+    implementation 'dev.entao.kan:log:3.0.0'
+    implementation 'dev.entao.kan:json:3.0.0'
+    implementation 'dev.entao.kan:http:3.0.0'
+    implementation 'dev.entao.kan:appbase:3.0.0'
+    implementation 'dev.entao.kan:ui:3.0.0'
 
     implementation project(':qrlib')
 }
