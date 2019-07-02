@@ -14,10 +14,10 @@ import com.google.zxing.MultiFormatReader
 import com.google.zxing.ResultPoint
 import com.google.zxing.ResultPointCallback
 import dev.entao.kan.appbase.Task
+import dev.entao.kan.base.hasPerm
 import dev.entao.kan.ext.FParam
 import dev.entao.kan.ext.Fill
 import dev.entao.kan.log.logd
-import dev.entao.kan.util.app.hasPerm
 import dev.entao.kan.qr.QRConfig
 import dev.entao.kan.qr.TaskHandler
 import java.util.*

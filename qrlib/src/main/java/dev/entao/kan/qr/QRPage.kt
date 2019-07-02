@@ -17,7 +17,6 @@ import dev.entao.kan.creator.createTextViewC
 import dev.entao.kan.dialogs.showInput
 import dev.entao.kan.ext.*
 import dev.entao.kan.log.logd
-import dev.entao.kan.page.PageClass
 import dev.entao.kan.page.TitlePage
 import dev.entao.kan.qr.camera.BarcodeResult
 import dev.entao.kan.qr.camera.CameraView
@@ -159,6 +158,4 @@ class QRPage : TitlePage() {
         return barcodeScannerView.onKeyDown(keyCode, event) || super.onKeyDown(keyCode, event)
     }
 
-
-    companion object : PageClass<QRPage>()
 }
