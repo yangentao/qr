@@ -3,7 +3,7 @@ package dev.entao.kan.qr
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
-import android.support.annotation.DrawableRes
+import androidx.annotation.DrawableRes
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.LinearLayout
