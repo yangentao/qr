@@ -4,6 +4,7 @@ import android.content.Context
 import android.widget.EditText
 import android.widget.LinearLayout
 import dev.entao.kan.appbase.App
+import dev.entao.kan.appbase.copyToClipboard
 import dev.entao.kan.base.openActivity
 import dev.entao.kan.base.pushPage
 import dev.entao.kan.creator.buttonGreenRound
@@ -49,7 +50,7 @@ class MainPage : TitlePage() {
         }
         contentView.buttonGreenRound {
             text = "Copy"
-            App.copyToClipboard(edit.textS)
+            App.inst.copyToClipboard(edit.textS)
         }
 
     }

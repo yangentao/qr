@@ -3,18 +3,18 @@ package dev.entao.kan.qr
 import android.content.Context
 import android.graphics.Color
 import android.os.Bundle
-import androidx.annotation.DrawableRes
 import android.util.Log
 import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.TextView
+import androidx.annotation.DrawableRes
 import dev.entao.kan.appbase.ex.ImageStated
 import dev.entao.kan.appbase.ex.sized
 import dev.entao.kan.base.act
 import dev.entao.kan.base.popPage
 import dev.entao.kan.creator.createLinearHorizontal
 import dev.entao.kan.creator.createTextViewC
-import dev.entao.kan.dialogs.showInput
+import dev.entao.kan.dialogs.dialogX
 import dev.entao.kan.ext.*
 import dev.entao.kan.log.logd
 import dev.entao.kan.page.TitlePage
@@ -90,7 +90,7 @@ class QRPage : TitlePage() {
     }
 
     private fun onInputCode() {
-        showInput("请输入编号") {
+        this.dialogX.showInput("请输入编号") {
             if (it.trim().isNotEmpty()) {
                 finish()
                 onScanText(it.trim())

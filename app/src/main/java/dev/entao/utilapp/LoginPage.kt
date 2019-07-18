@@ -3,11 +3,8 @@ package dev.entao.utilapp
 import android.content.Context
 import android.widget.LinearLayout
 import dev.entao.kan.creator.textView
-import dev.entao.kan.dialogs.alert
+import dev.entao.kan.dialogs.dialogX
 import dev.entao.kan.ext.*
-import dev.entao.kan.ext.WidthFill
-import dev.entao.kan.ext.gravityCenter
-import dev.entao.kan.ext.textColorRed
 import dev.entao.kan.page.TitlePage
 
 
@@ -22,7 +19,7 @@ class LoginPage : TitlePage() {
 				(activity as MainActivity).pop()
 			}
 			rightText("Dialog").onClick = {
-				alert("Hello")
+				dialogX.showAlert("Hello")
 			}
 		}
 
