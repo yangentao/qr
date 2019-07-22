@@ -5,7 +5,6 @@ import android.widget.EditText
 import android.widget.LinearLayout
 import dev.entao.kan.appbase.App
 import dev.entao.kan.appbase.copyToClipboard
-import dev.entao.kan.base.openActivity
 import dev.entao.kan.base.pushPage
 import dev.entao.kan.creator.buttonGreenRound
 import dev.entao.kan.creator.edit
@@ -22,8 +21,30 @@ class MainPage : TitlePage() {
     override fun onCreateContent(context: Context, contentView: LinearLayout) {
         super.onCreateContent(context, contentView)
         titleBar {
-            title("Main")
-            rightText("QR").onClick = {
+            title("二维码扫描")
+        }
+
+        edit = contentView.edit(LParam.WidthFill.height(150).margins(20)) {
+            gravityTopLeft()
+            isSingleLine = false
+            isVerticalScrollBarEnabled = true
+            isHorizontalScrollBarEnabled = false
+        }
+        contentView.buttonGreenRound {
+            text = "清除"
+            onClick {
+                edit.textS = ""
+            }
+        }
+        contentView.buttonGreenRound {
+            text = "复制"
+            onClick {
+                App.inst.copyToClipboard(edit.textS)
+            }
+        }
+        contentView.buttonGreenRound {
+            text = "扫描"
+            onClick {
                 val p = QRPage()
                 p.onScanText = {
                     logd("Scan: $it ")
@@ -31,28 +52,7 @@ class MainPage : TitlePage() {
                 }
                 pushPage(p)
             }
-            rightText("Open").onClick = {
-                openActivity(TestActivity::class){}
-            }
         }
-
-        edit = contentView.edit(LParam.WidthFill.height(120).margins(20)) {
-            gravityTopLeft()
-            setSingleLine(false)
-            isVerticalScrollBarEnabled = true
-            isHorizontalScrollBarEnabled = false
-        }
-        contentView.buttonGreenRound {
-            text = "Clear"
-            onClick {
-                edit.textS = ""
-            }
-        }
-        contentView.buttonGreenRound {
-            text = "Copy"
-            App.inst.copyToClipboard(edit.textS)
-        }
-
     }
 
 

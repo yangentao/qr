@@ -11,33 +11,29 @@ android {
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
+
+        archivesBaseName = "QR_$versionCode"
     }
 
     signingConfigs {
-        debug {
+        yet {
             storeFile file('yet.key')
-            storePassword 'yetyet'
-            keyAlias = 'yet'
-            keyPassword 'yetyet'
-        }
-        release {
-            storeFile file('yet.key')
-            storePassword 'yetyet'
-            keyAlias = 'yet'
-            keyPassword 'yetyet'
+            keyAlias = YET_NAME
+            storePassword YET_PWD
+            keyPassword YET_PWD
         }
     }
 
     buildTypes {
         debug {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.yet
         }
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            signingConfig signingConfigs.yet
         }
     }
     compileOptions {
@@ -58,10 +54,10 @@ dependencies {
     implementation 'androidx.constraintlayout:constraintlayout:1.1.3'
 
     implementation 'dev.entao.kan:log:4.0.0'
-    implementation 'dev.entao.kan:json:4.0.0'
+    implementation 'dev.entao.kan:json:4.0.3'
     implementation 'dev.entao.kan:http:4.0.0'
-    implementation 'dev.entao.kan:appbase:4.0.0'
-    implementation 'dev.entao.kan:ui:4.0.0'
+    implementation 'dev.entao.kan:appbase:4.0.11'
+    implementation 'dev.entao.kan:ui:4.0.18'
 
     implementation project(':qrlib')
 }
