@@ -1,11 +1,13 @@
 package dev.entao.utilapp
 
 import android.content.Context
+import android.net.Uri
 import android.widget.EditText
 import android.widget.LinearLayout
 import dev.entao.kan.appbase.App
 import dev.entao.kan.appbase.copyToClipboard
 import dev.entao.kan.base.pushPage
+import dev.entao.kan.base.viewUrl
 import dev.entao.kan.creator.buttonGreenRound
 import dev.entao.kan.creator.edit
 import dev.entao.kan.ext.*
@@ -40,6 +42,16 @@ class MainPage : TitlePage() {
             text = "复制"
             onClick {
                 App.inst.copyToClipboard(edit.textS)
+            }
+        }
+        contentView.buttonGreenRound {
+            text = "在浏览器打开"
+            onClick {
+                try {
+                    App.inst.viewUrl(Uri.parse(edit.textS))
+                } catch (ex: Exception) {
+
+                }
             }
         }
         contentView.buttonGreenRound {
