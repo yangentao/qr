@@ -14,6 +14,7 @@ import dev.entao.kan.ext.*
 import dev.entao.kan.log.logd
 import dev.entao.kan.page.TitlePage
 import dev.entao.kan.qr.QRPage
+import dev.entao.kan.qr.camerax.QRPageX
 
 
 class MainPage : TitlePage() {
@@ -24,6 +25,10 @@ class MainPage : TitlePage() {
         super.onCreateContent(context, contentView)
         titleBar {
             title("二维码扫描")
+            rightText("Open").onClick = {
+                val p = QRPageX()
+                pushPage(p)
+            }
         }
 
         edit = contentView.edit(LParam.WidthFill.height(150).margins(20)) {
