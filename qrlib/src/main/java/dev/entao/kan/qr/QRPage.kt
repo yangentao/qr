@@ -8,7 +8,7 @@ import android.view.KeyEvent
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.annotation.DrawableRes
-import dev.entao.kan.appbase.ex.ImageStated
+import dev.entao.kan.appbase.ex.StateList
 import dev.entao.kan.appbase.ex.sized
 import dev.entao.kan.base.act
 import dev.entao.kan.base.popPage
@@ -21,7 +21,7 @@ import dev.entao.kan.page.TitlePage
 import dev.entao.kan.qr.camera.BarcodeResult
 import dev.entao.kan.qr.camera.CameraView
 import dev.entao.kan.qr.camera.CaptureManager
-
+import dev.entao.kan.res.lightDrawable
 
 
 /**
@@ -112,7 +112,7 @@ class QRPage : TitlePage() {
 
     private fun makeButton(@DrawableRes normal: Int, @DrawableRes pressed: Int): TextView {
         val tv = act.createTextViewC().textColorWhite().clickable()
-        val d = ImageStated(normal).pressed(pressed).selected(pressed).value.sized(45)
+        val d = StateList.lightDrawable(normal, pressed).sized(45)
         tv.topImage(d, 2)
         tv.gravityCenter()
         return tv

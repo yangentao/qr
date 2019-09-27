@@ -1,7 +1,7 @@
 package dev.entao.kan.qr
 
 import com.google.zxing.BarcodeFormat
-import dev.entao.kan.appbase.ex.color
+import dev.entao.kan.appbase.ex.argb
 import dev.entao.kan.appbase.ex.dp
 
 /**
@@ -21,9 +21,9 @@ object QRConfig {
     var enableFromImageFile: Boolean = true
 
 
-    var possibleResultPoints = 0XC0FFBD21L.color
-    var viewfinderLaser = 0XFFCC0000L.color
-    var viewfinderMask = 0x60000000L.color
+    var possibleResultPoints = 0XC0FFBD21L.argb
+    var viewfinderLaser = 0XFFCC0000L.argb
+    var viewfinderMask = 0x60000000L.argb
 
     var isExposureEnabled = false
 
