@@ -54,9 +54,9 @@ dependencies {
 
     implementation 'dev.entao.kan:log:4.0.0'
     implementation 'dev.entao.kan:json:4.0.3'
-    implementation 'dev.entao.kan:http:4.0.5'
-    implementation 'dev.entao.kan:appbase:4.1.6'
-    implementation 'dev.entao.kan:ui:4.1.15'
+    implementation 'dev.entao.kan:http:4.0.6'
+    implementation 'dev.entao.kan:appbase:4.1.8'
+    implementation 'dev.entao.kan:ui:4.2.7'
 
     implementation project(':qrlib')
 }

@@ -38,7 +38,7 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
     implementation 'com.google.zxing:core:3.3.3'
 
-    implementation 'dev.entao.kan:ui:4.1.15'
+    implementation 'dev.entao.kan:ui:4.2.7'
 }
 
 
